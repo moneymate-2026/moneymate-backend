@@ -3,12 +3,12 @@ services:
   gateway:
     build:
       context: .
-      dockerfile: ./gateway/Dockerfile
+      dockerfile: ./services/gateway/Dockerfile
       target: dev # <--- Uses the Air development stage
     volumes:
       - ./:/moneymate-backend
 
-    working_dir: /moneymate-backend/gateway
+    working_dir: /moneymate-backend/services/gateway
     environment:
       - CONFIG_PATH=/moneymate-backend/shared/config/config.yaml
     env_file:
@@ -24,11 +24,11 @@ services:
   auth:
     build:
       context: .
-      dockerfile: ./auth/Dockerfile
+      dockerfile: ./services/auth/Dockerfile
       target: dev # <--- Uses the Air development stage
     volumes:
      - ./:/moneymate-backend
-    working_dir: /moneymate-backend/auth
+    working_dir: /moneymate-backend/services/auth
     environment:
       - CONFIG_PATH=/moneymate-backend/shared/config/config.yaml
     env_file:
@@ -57,6 +57,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres:/docker-entrypoint-initdb.d
 
   redis:
     image: redis:7-alpine # 7 is the current stable alpine version
@@ -66,6 +67,18 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD}
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

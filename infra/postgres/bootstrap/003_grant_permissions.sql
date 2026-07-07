@@ -1,0 +1,2 @@
+-- Placeholder.
+-- Permissions will be added after service schemas are finalized.
