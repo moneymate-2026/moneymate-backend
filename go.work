@@ -4,4 +4,4 @@ use (
 	./services/auth
 	./services/gateway
 	./shared
-) 
+)
