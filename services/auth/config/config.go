@@ -175,7 +175,6 @@
 // 	return nil
 // }
 
-
 package config
 
 import (
@@ -183,6 +182,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	sharedconfig "github.com/moneymate-2026/moneymate-backend/shared/config"
 	"github.com/spf13/viper"
 )
@@ -226,6 +226,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
+	_ = godotenv.Load() 
 	yamlPath := os.Getenv("CONFIG_PATH")
 	if yamlPath == "" {
 		yamlPath = "./config/config.yaml"

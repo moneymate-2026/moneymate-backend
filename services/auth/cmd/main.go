@@ -1,36 +1,71 @@
 package main
 
-// import (
-// 	"context"
-// 	"log"
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"os/signal"
+	"syscall"
 
-// 	"github.com/moneymate-2026/moneymate-backend/auth/config"
-// 	"github.com/moneymate-2026/moneymate-backend/auth/internal/adapter/postgres"
-// 	"github.com/moneymate-2026/moneymate-backend/auth/internal/adapter/postgres/repo"
-// 	db "github.com/moneymate-2026/moneymate-backend/auth/sqlc/generated"
-// )
+	"google.golang.org/grpc"
 
-// func main() {
-// 	cfg, err := config.LoadConfig()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+	"github.com/moneymate-2026/moneymate-backend/auth/config"
+)
 
-// 	pool, err := postgres.ConnectDB(context.Background(), &postgres.Config{
-// 		DSN:             cfg.Database.DSN,
-// 		MaxOpenConns:    cfg.Database.MaxOpenConns,
-// 		MinOpenConns:    cfg.Database.MinOpenConns,
-// 		MaxConnLifetime: cfg.Database.MaxConnLifetime,
-// 		MaxIdleTime:     cfg.Database.MaxIdleTime,
-// 	})
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+func main() {
+	if err := run(); err != nil {
+		log.Fatalf("auth service exited with error: %v", err)
+	}
+}
 
-// 	queries := db.New(pool)
-// 	userRepo := repo.NewUserRepository(queries)
+func run() error {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	log.Printf("starting auth service — env=%s grpc=%s", cfg.Env, cfg.Server.GRPCAddr)
 
-// 	_ = userRepo
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-// 	// continue wiring services...
-// }
+	pool, err := connectPostgres(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+
+	redisClient, err := connectRedis(cfg)
+	if err != nil {
+		return err
+	}
+	defer redisClient.Close()
+
+	// c := buildContainer(cfg, pool, redisClient)
+
+	grpcServer := grpc.NewServer()
+
+	listener, err := net.Listen("tcp", cfg.Server.GRPCAddr)
+	if err != nil {
+		return fmt.Errorf("listen grpc: %w", err)
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		log.Printf("grpc server listening on %s", cfg.Server.GRPCAddr)
+		if err := grpcServer.Serve(listener); err != nil {
+			errCh <- fmt.Errorf("grpc server: %w", err)
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Println("shutdown signal received")
+	case err := <-errCh:
+		log.Printf("server error: %v", err)
+	}
+
+	grpcServer.GracefulStop()
+	log.Println("auth service stopped cleanly")
+	return nil
+}
