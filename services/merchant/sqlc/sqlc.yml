@@ -1,0 +1,25 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    # ALIGNMENT 1: Point to the directory instead of a specific file. 
+    # This ensures future files (e.g., campaigns.sql) are compiled automatically.
+    queries: "queries" 
+    schema: "../migrations"
+    gen:
+      go:
+        package: "generated"
+        out: "generated"
+        sql_package: "pgx/v5"
+        
+        # ALIGNMENT 2: Inherited from Auth
+        emit_interface: true
+        emit_empty_slices: true
+        emit_json_tags: false # Keep false for Merchant. DB structs should not leak to HTTP.
+        
+        # DO NOT REMOVE: Merchant-specific strict typing
+        emit_pointers_for_null_types: true
+        overrides:
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: timestamptz
+            go_type: time.Time

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package merchant;
+
+// Aligned exactly with handler.go import path
+option go_package = "github.com/moneymate-2026/moneymate-backend/shared/proto/merchant";
+
+service MerchantService {
+  rpc RegisterStore(RegisterStoreRequest) returns (RegisterStoreResponse);
+}
+
+message RegisterStoreRequest {
+  string owner_id = 1;
+  string owner_name = 2;
+  string contact_email = 3;
+  string mobile_number = 4;
+  string legal_name = 5;
+  string type = 6;
+  string dba_name = 7;
+  string tax_id = 8;
+}
+
+message RegisterStoreResponse {
+  string store_id = 1;
+  string display_id = 2;
+  string status = 3;
+  string plan = 4;
+}

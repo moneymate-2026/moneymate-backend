@@ -71,7 +71,8 @@
         │   │   └── jwt.go              ← Fiber middleware, extracts JWT from Authorization header, validates signature locally, puts claims into fiber context, rejects invalid tokens before request reaches any service
         │   │
         │   └── 📁proxy
-        │   │   └── auth_client.go      ← gRPC CLIENT for auth-svc, holds connection to auth-svc:9091, exposes methods gateway needs (ValidateToken, GetUserClaims)
+        │   │   └── auth_client.go      ← gRPC CLIENT for auth-svc, holds connection to auth-svc:9091, exposes methods gate
+        way needs (ValidateToken, GetUserClaims)
         │   │
         │   └── 📁transport
         │       └── 📁http

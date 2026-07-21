@@ -1,0 +1,38 @@
+# ── Git ──────────────────────────────────────────────────────────
+.git
+.gitignore
+
+# ── Environment ──────────────────────────────────────────────────
+.env
+.env.prod
+.env.local
+**/.env
+**/.env.prod
+
+# ── Air temp files ───────────────────────────────────────────────
+tmp/
+**/tmp/
+
+# ── IDE ──────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+
+# ── OS ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Docs ─────────────────────────────────────────────────────────
+docs/
+*.md
+README*
+
+# ── Test files (not needed in prod image) ────────────────────────
+**/*_test.go
+
+# ── Docker files themselves ───────────────────────────────────────
+**/Dockerfile
+**/.dockerignore
+docker-compose*.yml
+Taskfile.yml
+Makefile

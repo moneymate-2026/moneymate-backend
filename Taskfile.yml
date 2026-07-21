@@ -7,6 +7,7 @@ vars:
   DEV_COMPOSE: docker-compose.yml
   PROD_COMPOSE: docker-compose.prod.yml
   AUTH_MIGRATIONS: /moneymate/services/auth/migrations
+  MERCHANT_MIGRATIONS: /moneymate/services/merchant/migrations
 
 tasks:
 
@@ -35,6 +36,10 @@ tasks:
     desc: "Tail logs from gateway service only"
     cmd: docker compose -f {{.DEV_COMPOSE}} logs -f gateway
 
+  logs:merchant:
+    desc: "Tail logs from merchant service only"
+    cmd: docker compose -f {{.DEV_COMPOSE}} logs -f merchant
+
   # ── Production ────────────────────────────────────────────────
   prod:
     desc: "Start all services in production mode"
@@ -61,6 +66,10 @@ tasks:
   db:shell:auth:
     desc: "Open psql shell as auth_user — confirms schema isolation"
     cmd: docker compose -f {{.DEV_COMPOSE}} exec postgres psql -U ${AUTH_DB_USER} -d ${POSTGRES_DB}
+
+  db:shell:merchant:
+    desc: "Open psql shell as merchant_user — confirms schema isolation"
+    cmd: docker compose -f {{.DEV_COMPOSE}} exec postgres psql -U ${MERCHANT_DB_USER} -d ${POSTGRES_DB}
 
   # ── Migrations ────────────────────────────────────────────────
   migrate:auth:
@@ -90,9 +99,36 @@ tasks:
       -database "${AUTH_DB_URL}"
       version
 
+  migrate:merchant:
+    desc: "Run merchant service migrations up"
+    cmd: >
+      docker compose -f {{.DEV_COMPOSE}} run --rm merchant
+      migrate
+      -path {{.MERCHANT_MIGRATIONS}}
+      -database "${MERCHANT_DB_URL}"
+      up
+
+  migrate:merchant:down:
+    desc: "Roll back last merchant migration"
+    cmd: >
+      docker compose -f {{.DEV_COMPOSE}} run --rm merchant
+      migrate
+      -path {{.MERCHANT_MIGRATIONS}}
+      -database "${MERCHANT_DB_URL}"
+      down 1
+
+  migrate:merchant:status:
+    desc: "Show current merchant migration version"
+    cmd: >
+      docker compose -f {{.DEV_COMPOSE}} run --rm merchant
+      migrate
+      -path {{.MERCHANT_MIGRATIONS}}
+      -database "${MERCHANT_DB_URL}"
+      version
+
   migrate:all:
     desc: "Run migrations for all services"
-    deps: [migrate:auth]     
+    deps: [migrate:auth]       # ← add migrate:core, migrate:merchant later
 
   # ── Code Generation ───────────────────────────────────────────
   sqlc:auth:
@@ -103,8 +139,16 @@ tasks:
       -w /src
       sqlc/sqlc generate
 
+  sqlc:merchant:
+    desc: "Generate SQLC code for merchant service"
+    cmd: >
+      docker run --rm
+      -v $(pwd)/services/merchant:/src
+      -w /src
+      sqlc/sqlc generate
+
   proto:gen:
-    desc: "Generate gRPC code from proto files"
+    desc: "Generate gRPC code from proto files for all services"
     cmd: >
       protoc
       --go_out=shared/proto/gen
@@ -112,6 +156,7 @@ tasks:
       --go-grpc_out=shared/proto/gen
       --go-grpc_opt=paths=source_relative
       shared/proto/auth/auth.proto
+      shared/proto/merchant/merchant.proto
 
   # ── Testing ───────────────────────────────────────────────────
   test:auth:
@@ -119,15 +164,26 @@ tasks:
     dir: services/auth
     cmd: go test ./...
 
+  test:merchant:
+    desc: "Run merchant service tests"
+    dir: services/merchant
+    cmd: go test ./...
+
   test:all:
     desc: "Run all tests"
     cmds:
       - task: test:auth
+      - task: test:merchant
 
   # ── Utilities ─────────────────────────────────────────────────
   tidy:auth:
     desc: "Run go mod tidy for auth service"
     dir: services/auth
+    cmd: go mod tidy
+
+  tidy:merchant:
+    desc: "Run go mod tidy for merchant service"
+    dir: services/merchant
     cmd: go mod tidy
 
   tidy:shared:
@@ -144,6 +200,7 @@ tasks:
     desc: "Run go mod tidy for all modules"
     cmds:
       - task: tidy:auth
+      - task: tidy:merchant
       - task: tidy:gateway
       - task: tidy:shared
 
