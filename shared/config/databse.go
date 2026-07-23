@@ -21,6 +21,7 @@ type DatabaseConfig struct {
 	MaxIdleTime     time.Duration
 
 	DSN string
+	MigrationsPath string
 }
 
 
@@ -37,11 +38,13 @@ func LoadDatabaseConfig(v *viper.Viper, schema string) DatabaseConfig {
 		MaxIdleConns:    v.GetInt("database.max_idle_conns"),
 		MaxConnLifetime: v.GetDuration("database.max_conn_lifetime"),
 		MaxIdleTime:     v.GetDuration("database.max_idle_time"),
+		MigrationsPath:  v.GetString("database.migrations_path"),
 	}
 
 	cfg.DSN = fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s",
-		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name, schema,
-	)
+    "postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s&pool_max_conns=%d&pool_min_conns=%d&pool_max_conn_lifetime=%v&pool_max_conn_idle_time=%v",
+    cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name, schema,
+    cfg.MaxOpenConns, cfg.MinOpenConns, cfg.MaxConnLifetime, cfg.MaxIdleTime,
+)
 	return cfg
 }

@@ -13,7 +13,7 @@ import (
 type Querier interface {
 	AssignPermissionToRole(ctx context.Context, arg AssignPermissionToRoleParams) error
 	AssignRoleToUser(ctx context.Context, arg AssignRoleToUserParams) error
-	CountUsers(ctx context.Context) (int64, error)
+	CountUsers(ctx context.Context, arg CountUsersParams) (int64, error)
 	CreateOAuthAccount(ctx context.Context, arg CreateOAuthAccountParams) (AuthOauthAccount, error)
 	CreatePIN(ctx context.Context, arg CreatePINParams) error
 	CreatePermission(ctx context.Context, arg CreatePermissionParams) (AuthPermission, error)

@@ -7,21 +7,19 @@ import (
 )
 
 func RegisterRoutes(router fiber.Router, h *AuthHandler, authMiddleware fiber.Handler) {
-	userAuth := router.Group("/user/auth")
-	userAuth.Post("/register", h.Register(domain.AccountTypeUser))
-	userAuth.Post("/login", h.Login)
-	userAuth.Post("/logout", authMiddleware, h.Logout)
-	userAuth.Post("/otp/send", h.SendRegistrationOTP)
-	userAuth.Post("/otp/verify", h.VerifyRegistrationOTP)
+	auth := router.Group("/auth")
+	
+	//auth endpoints 
+    auth.Post("/login", h.Login)
+    auth.Post("/logout", authMiddleware, h.Logout)
+    auth.Post("/otp/send", h.SendRegistrationOTP)
+    auth.Post("/otp/verify", h.VerifyRegistrationOTP)
+    
+    // Specific Registration Routes
+    auth.Post("/user/register", h.Register(domain.AccountTypeUser))
+    auth.Post("/merchant/register", h.Register(domain.AccountTypeMerchant))
 
-	merchantAuth := router.Group("/merchant/auth")
-	merchantAuth.Post("/register", h.Register(domain.AccountTypeMerchant))
-	merchantAuth.Post("/login", h.Login)
-	merchantAuth.Post("/logout", authMiddleware, h.Logout)
-	merchantAuth.Post("/otp/send", h.SendRegistrationOTP)
-	merchantAuth.Post("/otp/verify", h.VerifyRegistrationOTP)
-
-	// Internal endpoints — called by gateway, not exposed to clients
+    // Internal endpoints
     internal := router.Group("/internal")
     internal.Post("/auth/verify-access-token", h.VerifyAccessToken)
     internal.Post("/auth/verify-transaction-token", h.VerifyTransactionToken)

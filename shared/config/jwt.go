@@ -17,3 +17,5 @@ func LoadJWTConfig(v *viper.Viper) JWTConfig {
 		RefreshSecret:       MustGet("JWT_REFRESH_SECRET"),
 	}
 }
+
+

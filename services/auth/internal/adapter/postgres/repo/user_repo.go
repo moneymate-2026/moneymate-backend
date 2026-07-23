@@ -231,41 +231,65 @@ func (r *userRepo) GetTokenVersion(ctx context.Context, userID uuid.UUID) (int64
 
 // ── List ──────────────────────────────────────────────────────────
 
+
 func (r *userRepo) ListUsers(ctx context.Context, filter domain.ListUsersFilter, page domain.Pagination) (*domain.ListUsersResult, error) {
-    if page.PageSize <= 0 {
-        page.PageSize = 20
-    }
-    if page.PageSize > 100 {
-        page.PageSize = 100
-    }
-    if page.Page <= 0 {
-        page.Page = 1
-    }
+	if page.PageSize <= 0 {
+		page.PageSize = 20
+	}
+	if page.PageSize > 100 {
+		page.PageSize = 100
+	}
+	if page.Page <= 0 {
+		page.Page = 1
+	}
+	offset := (page.Page - 1) * page.PageSize
 
-    offset := (page.Page - 1) * page.PageSize
+	sortBy := filter.SortBy
+	switch sortBy {
+	case "email", "full_name", "created_at":
+	default:
+		sortBy = "created_at"
+	}
 
-    rows, err := r.q.ListUsers(ctx, db.ListUsersParams{
-        Limit:  int32(page.PageSize),
-        Offset: int32(offset),
-    })
-    if err != nil {
-        return nil, fmt.Errorf("list users: %w", err)
-    }
+	var statusParam db.NullAuthUserStatus 
+	if filter.Status != "" {
+		statusParam = db.NullAuthUserStatus{AuthUserStatus: db.AuthUserStatus(filter.Status), Valid: true}
+	}
 
-    total, err := r.q.CountUsers(ctx)
-    if err != nil {
-        return nil, fmt.Errorf("count users: %w", err)
-    }
+	var searchParam pgtype.Text
+	if filter.Search != "" {
+		searchParam = pgtype.Text{String: filter.Search, Valid: true}
+	}
 
-    users := make([]domain.User, len(rows))
-    for i, row := range rows {
-        users[i] = *toDomainUser(row)
-    }
+	rows, err := r.q.ListUsers(ctx, db.ListUsersParams{
+		Status:   statusParam,
+		Search:   searchParam,
+		SortBy:   sortBy,
+		SortDesc: filter.SortDesc,
+		Limit:    int32(page.PageSize),
+		Offset:   int32(offset),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list users: %w", err)
+	}
 
-    return &domain.ListUsersResult{
-        Users:      users,
-        TotalCount: total,
-    }, nil
+	total, err := r.q.CountUsers(ctx, db.CountUsersParams{
+		Status: statusParam,
+		Search: searchParam,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("count users: %w", err)
+	}
+
+	users := make([]domain.User, len(rows))
+	for i, row := range rows {
+		users[i] = *toDomainUser(row)
+	}
+
+	return &domain.ListUsersResult{
+		Users:      users,
+		TotalCount: total,
+	}, nil
 }
 
 // ── Type Conversion Helpers ───────────────────────────────────────

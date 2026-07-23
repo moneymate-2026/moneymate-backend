@@ -58,10 +58,6 @@ func LoadConfig() (*Config, error) {
 	v.SetConfigFile(yamlPath)
 	v.AutomaticEnv()
 
-	// All v.BindEnv calls removed — Database/SMTP/Redis/JWT are now
-	// populated explicitly below via the shared Load* functions, which
-	// call MustGet/Get directly instead of relying on viper's env binding.
-
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
@@ -70,8 +66,6 @@ func LoadConfig() (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
-	// Server, OTP, Argon2, Log still populate normally via mapstructure tags.
-	// Database, Redis, JWT, SMTP are zero-valued here — populated next.
 
 	cfg.Database = sharedconfig.LoadDatabaseConfig(v, "auth")
 	cfg.SMTP = sharedconfig.LoadSMTPConfig(v)
@@ -88,10 +82,6 @@ func LoadConfig() (*Config, error) {
 }
 
 func validate(cfg *Config) error {
-	// All required-field checks for Database/Redis/JWT/SMTP removed —
-	// MustGet inside each shared Load* function already fails loudly
-	// if any of those env vars are missing. Only OTP-specific business
-	// rules remain here, since those aren't generic config concerns.
 
 	if cfg.OTP.Length < 4 || cfg.OTP.Length > 10 {
 		return fmt.Errorf("otp.length must be between 4 and 10, got %d", cfg.OTP.Length)

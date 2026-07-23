@@ -12,11 +12,26 @@ import (
 )
 
 const countUsers = `-- name: CountUsers :one
-SELECT count(*) FROM auth.users
+SELECT COUNT(*) FROM auth.users
+WHERE
+    ($1::auth_user_status IS NULL OR status = $1)
+    AND ($2::text IS NULL OR role = $2)
+    AND (
+        $3::text IS NULL
+        OR email ILIKE '%' || $3::text || '%'
+        OR full_name ILIKE '%' || $3::text || '%'
+        OR handle ILIKE '%' || $3::text || '%'
+    )
 `
 
-func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsers)
+type CountUsersParams struct {
+	Status interface{} `json:"status"`
+	Role   pgtype.Text `json:"role"`
+	Search pgtype.Text `json:"search"`
+}
+
+func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsers, arg.Status, arg.Role, arg.Search)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -229,17 +244,46 @@ func (q *Queries) IncrementTokenVersion(ctx context.Context, id pgtype.UUID) (in
 
 const listUsers = `-- name: ListUsers :many
 SELECT id, email, phone, full_name, handle, password_hash, status, token_version, is_email_verified, is_phone_verified, created_at, updated_at FROM auth.users
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
+WHERE
+    ($1::auth_user_status IS NULL OR status = $1)
+    AND ($2::text IS NULL OR role = $2)
+    AND (
+        $3::text IS NULL
+        OR email ILIKE '%' || $3::text || '%'
+        OR full_name ILIKE '%' || $3::text || '%'
+        OR handle ILIKE '%' || $3::text || '%'
+    )
+ORDER BY
+    CASE WHEN $4::text = 'email' AND NOT $5::bool THEN email END ASC NULLS LAST,
+    CASE WHEN $4::text = 'email' AND $5::bool THEN email END DESC NULLS LAST,
+    CASE WHEN $4::text = 'full_name' AND NOT $5::bool THEN full_name END ASC NULLS LAST,
+    CASE WHEN $4::text = 'full_name' AND $5::bool THEN full_name END DESC NULLS LAST,
+    CASE WHEN $4::text = 'created_at' AND NOT $5::bool THEN created_at END ASC,
+    CASE WHEN $4::text = 'created_at' AND $5::bool THEN created_at END DESC,
+    created_at DESC
+LIMIT $7 OFFSET $6
 `
 
 type ListUsersParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Status   interface{} `json:"status"`
+	Role     pgtype.Text `json:"role"`
+	Search   pgtype.Text `json:"search"`
+	SortBy   string      `json:"sort_by"`
+	SortDesc bool        `json:"sort_desc"`
+	Offset   int32       `json:"offset"`
+	Limit    int32       `json:"limit"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]AuthUser, error) {
-	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listUsers,
+		arg.Status,
+		arg.Role,
+		arg.Search,
+		arg.SortBy,
+		arg.SortDesc,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}

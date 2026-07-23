@@ -15,8 +15,6 @@ services:
       - SERVER_PORT=8080
       - SERVICES_AUTH_ADDR=auth:8081
       - REDIS_ADDRESS=redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -43,21 +41,13 @@ services:
       - .env
     environment:
       - CONFIG_PATH=/moneymate-backend/services/auth/config/config.yaml
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB}
       - REDIS_ADDR=redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - SMTP_USERNAME=${SMTP_USERNAME}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
       - ENVIRONMENT=dev
     expose:
       - "8081"
-    ports: ["8081:8081"] # no host-published ports needed (gateway talks internally)
+    ports: ["8081:8081"]  
     restart: unless-stopped
     depends_on:
       postgres:
@@ -110,13 +100,15 @@ services:
     image: dpage/pgadmin4:latest
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_EMAIL: admin@moneymate.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
     depends_on:
       postgres:
         condition: service_healthy
+    networks:                     
+      - moneymate-network
 
 volumes:
   postgres_data:

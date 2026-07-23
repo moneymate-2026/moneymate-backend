@@ -12,7 +12,10 @@ require (
 	github.com/spf13/viper v1.21.0
 )
 
-require github.com/google/go-cmp v0.7.0 // indirect
+require (
+	github.com/golang-migrate/migrate/v4 v4.19.1 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
+)
 
 require (
 	github.com/alexedwards/argon2id v1.0.0 // indirect

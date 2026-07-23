@@ -32,15 +32,15 @@ type User struct {
 }
 
 type ListUsersFilter struct {
-    Status   string   // optional: "active", "pending", etc.
-    Search   string   // optional: match email or full_name (ILIKE)
-    SortBy   string   // "created_at", "email", etc. (default "created_at")
-    SortDesc bool     // default false (ascending)
+    Status   string   
+    Search   string   
+    SortBy   string   
+    SortDesc bool     
 }
 
 type Pagination struct {
-    Page     int // 1‑based
-    PageSize int // default 20, max 100
+    Page     int 
+    PageSize int 
 }
 
 type ListUsersResult struct {

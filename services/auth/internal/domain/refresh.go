@@ -11,7 +11,7 @@ type RefreshToken struct {
 	UserID    uuid.UUID
 	TokenHash string
 	ExpiresAt time.Time
-	RevokedAt *time.Time // Pointer because it can be NULL
+	RevokedAt *time.Time 
 	CreatedAt time.Time
 }
 

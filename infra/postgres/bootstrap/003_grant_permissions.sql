@@ -28,3 +28,13 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA rewards TO rewards_user;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA automation TO automation_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA automation TO automation_user;
+
+
+
+
+
+GRANT CREATE ON SCHEMA auth TO auth_user;
+GRANT CREATE ON SCHEMA core TO core_user;
+GRANT CREATE ON SCHEMA merchant TO merchant_user;
+GRANT CREATE ON SCHEMA rewards TO rewards_user;
+GRANT CREATE ON SCHEMA automation TO automation_user;

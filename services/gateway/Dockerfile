@@ -9,6 +9,7 @@ COPY go.work go.work.sum ./
 COPY shared/go.mod shared/go.mod
 COPY services/auth/go.mod services/auth/go.mod
 COPY services/gateway/go.mod services/gateway/go.mod
+COPY services/merchant/go.mod services/merchant/go.mod
 
 RUN go work sync
 

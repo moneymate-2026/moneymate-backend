@@ -84,8 +84,8 @@ func (u *authUsecase) Register(ctx context.Context, req RegisterRequest) (*Regis
 	if email == "" || !strings.Contains(email, "@") {
 		return nil, apperrors.ErrInvalidInput
 	}
-	if len(req.Password) < 8 {
-		return nil, apperrors.ErrInvalidInput
+	if err:=validatePassword(req.Password);err!=nil{
+		return nil,err
 	}
 	if req.AccountType != domain.AccountTypeUser && req.AccountType != domain.AccountTypeMerchant {
 		return nil, apperrors.ErrInvalidInput
