@@ -318,16 +318,18 @@ func (u *authUsecase) generateHandle(ctx context.Context, email string) (string,
 	if local == "" {
 		local = "user"
 	}
-	if len(local) > 20 {
-		local = local[:20]
+	if len(local) > 15 {
+		local = local[:15]
 	}
 
-	for i := 0; i < maxHandleAttempts; i++ {
+	for range maxHandleAttempts {
 		suffix, err := randomAlnum(4)
 		if err != nil {
 			return "", err
 		}
-		candidate := local + suffix
+
+		candidate := local + suffix + "@moneymate"
+		
 		exists, err := u.userRepo.HandleExists(ctx, candidate)
 		if err != nil {
 			return "", err

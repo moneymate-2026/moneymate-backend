@@ -1,5 +1,5 @@
 FROM golang:1.26-alpine AS base
-WORKDIR /moneymate
+WORKDIR  /moneymate-backend
 
 RUN apk add --no-cache git
 
@@ -14,14 +14,14 @@ COPY services/merchant/go.mod services/merchant/go.mod
 RUN go work sync
 
 FROM base AS dev
-WORKDIR /moneymate/services/gateway
+WORKDIR  /moneymate-backend/services/gateway
 
 RUN go install github.com/air-verse/air@latest
 
 CMD ["air", "-c", ".air.toml"]
 
 FROM base AS builder
-WORKDIR /moneymate
+WORKDIR  /moneymate-backend
 
 COPY shared/ shared/
 COPY services/gateway/ services/gateway/

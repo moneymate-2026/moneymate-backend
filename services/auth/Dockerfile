@@ -1,4 +1,3 @@
-
 FROM golang:1.26-alpine AS base
 WORKDIR /moneymate
 
@@ -15,6 +14,7 @@ COPY services/merchant/go.mod services/merchant/go.mod
 
 RUN go work sync
 
+# ── DEV ──────────────────────────────────────────
 FROM base AS dev
 WORKDIR /moneymate/services/auth
 
@@ -22,8 +22,9 @@ RUN go install github.com/air-verse/air@latest
 
 CMD ["air", "-c", ".air.toml"]
 
+# ── BUILDER ──────────────────────────────────────
 FROM base AS builder
-WORKDIR /moneymate
+WORKDIR /moneymate-backend
 
 COPY shared/ shared/
 COPY services/auth/ services/auth/
@@ -32,12 +33,15 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o /bin/auth \
     ./services/auth/cmd/main.go
 
+# ── PROD ─────────────────────────────────────────
 FROM alpine:3.19 AS prod
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
 
 COPY --from=builder /bin/auth /bin/auth
+COPY --from=builder /moneymate-backend/services/auth/migrations /migrations
+
+USER appuser
 
 EXPOSE 8081
 
