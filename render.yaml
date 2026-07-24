@@ -1,34 +1,54 @@
 services:
-  # ── Microservices (Forced to 'web' for Free Tier) ──
+  # ── Auth Service ──
   - type: web
     name: auth-service
     env: docker
     region: singapore
     plan: free
+    dockerContext: .
     dockerfilePath: ./services/auth/Dockerfile
     envVars:
+      - key: PORT
+        value: "8081"
+      - key: ENVIRONMENT
+        value: production
+      - key: DB_URL
+        value: postgresql://superuser:41tRCqFMbMCgPwg2K3gB64JECN1Q9ih8@dpg-d9hk7pl8nd3s73d7cji0-a/moneymate_ld80?sslmode=require&search_path=auth
       - key: AUTH_DB_URL
-        value: postgresql://superuser:41tRCqFMbMCgPwg2K3gB64JECN1Q9ih8@dpg-d9hk7pl8nd3s73d7cji0-a/moneymate_ld80
+        value: postgresql://superuser:41tRCqFMbMCgPwg2K3gB64JECN1Q9ih8@dpg-d9hk7pl8nd3s73d7cji0-a/moneymate_ld80?sslmode=require&search_path=auth
 
+  # ── Merchant Service ──
   - type: web
     name: merchant-service
     env: docker
     region: singapore
     plan: free
+    dockerContext: .
     dockerfilePath: ./services/merchant/Dockerfile
     envVars:
+      - key: PORT
+        value: "9092"
+      - key: ENVIRONMENT
+        value: production
       - key: MERCHANT_DB_URL
-        value: postgresql://superuser:41tRCqFMbMCgPwg2K3gB64JECN1Q9ih8@dpg-d9hk7pl8nd3s73d7cji0-a/moneymate_ld80
+        value: postgresql://superuser:41tRCqFMbMCgPwg2K3gB64JECN1Q9ih8@dpg-d9hk7pl8nd3s73d7cji0-a/moneymate_ld80?sslmode=require&search_path=merchant
 
-  # ── Public API Gateway ──
+  # ── API Gateway (Public Ingress) ──
   - type: web
     name: api-gateway
     env: docker
     region: singapore
     plan: free
+    dockerContext: .
     dockerfilePath: ./services/gateway/Dockerfile
     envVars:
+      - key: PORT
+        value: "8080"
+      - key: ENVIRONMENT
+        value: production
       - key: AUTH_SERVICE_URL
         value: http://auth-service:8081
+      - key: SERVICES_AUTH_ADDR
+        value: auth-service:8081
       - key: MERCHANT_SERVICE_URL
-        value: http://merchant-service:50053
+        value: http://merchant-service:9092
