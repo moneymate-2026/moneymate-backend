@@ -1,18 +1,20 @@
 services:
-  # ── Internal Microservices ──
-  - type: pserv
+  # ── Microservices (Forced to 'web' for Free Tier) ──
+  - type: web
     name: auth-service
     env: docker
     region: singapore
+    plan: free
     dockerfilePath: ./services/auth/Dockerfile
     envVars:
       - key: AUTH_DB_URL
         value: postgresql://superuser:41tRCqFMbMCgPwg2K3gB64JECN1Q9ih8@dpg-d9hk7pl8nd3s73d7cji0-a/moneymate_ld80
 
-  - type: pserv
+  - type: web
     name: merchant-service
     env: docker
     region: singapore
+    plan: free
     dockerfilePath: ./services/merchant/Dockerfile
     envVars:
       - key: MERCHANT_DB_URL
@@ -23,6 +25,7 @@ services:
     name: api-gateway
     env: docker
     region: singapore
+    plan: free
     dockerfilePath: ./services/gateway/Dockerfile
     envVars:
       - key: AUTH_SERVICE_URL
