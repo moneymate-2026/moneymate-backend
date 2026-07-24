@@ -112,6 +112,26 @@ func (h *AuthHandler) Logout(c fiber.Ctx) error {
 	return response.OK(c, "logged out successfully", nil)
 }
 
+func (h *AuthHandler) RefreshToken(c fiber.Ctx) error {
+    var req struct {
+        RefreshToken string `json:"refresh_token" validate:"required"`
+    }
+    if err := c.Bind().Body(&req); err != nil {
+        return response.BadRequest(c, nil, "invalid request body")
+    }
+    if err := validate.Struct(req); err != nil {
+        return response.BadRequest(c, formatValidationErrors(err), "validation failed")
+    }
+
+    resp, err := h.authUsecase.RefreshToken(c.Context(), usecase.RefreshTokenRequest{
+        RefreshToken: req.RefreshToken,
+    })
+    if err != nil {
+        return handleError(c, err)
+    }
+    return response.OK(c, "token refreshed", resp)
+}
+
 func (h *AuthHandler) SendRegistrationOTP(c fiber.Ctx) error {
 	var req sendRegistrationOTPRequest
 	if err := c.Bind().Body(&req); err != nil {

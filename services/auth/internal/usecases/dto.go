@@ -79,5 +79,12 @@ type VerifyRegistrationOTPResponse struct {
 	Verified bool
 }
 
+type RefreshTokenRequest struct {
+    RefreshToken string
+}
 
-
+type RefreshTokenResponse struct {
+    AccessToken     string    `json:"access_token"`
+    RefreshToken    string    `json:"refresh_token"`
+    AccessExpiresAt time.Time `json:"access_expires_at"`
+}

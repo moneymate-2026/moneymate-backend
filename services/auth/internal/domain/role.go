@@ -20,6 +20,7 @@ type AccountType string
 const (
 	AccountTypeUser     AccountType = "user"
 	AccountTypeMerchant AccountType = "merchant"
+	AccountTypeAdmin	AccountType = "admin"
 )
 
 type RoleRepository interface {

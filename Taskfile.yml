@@ -6,8 +6,8 @@ dotenv: ['.env']
 vars:
   DEV_COMPOSE: docker-compose.yml
   PROD_COMPOSE: docker-compose.prod.yml
-  AUTH_MIGRATIONS: /moneymate/services/auth/migrations
-  MERCHANT_MIGRATIONS: /moneymate/services/merchant/migrations
+  AUTH_MIGRATIONS: /moneymate-backend/services/auth/migrations
+  MERCHANT_MIGRATIONS: /moneymate-backend/services/merchant/migrations
 
 tasks:
 

@@ -69,10 +69,12 @@ services:
       - .env
     environment:
       - CONFIG_PATH=/moneymate-backend/services/auth/config/config.yaml
+      - POSTGRES_USER=${AUTH_DB_USER}
+      - POSTGRES_PASSWORD=${AUTH_DB_PASSWORD}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - REDIS_ADDR=redis:6379
-      - ENVIRONMENT=dev
+      - ENVIRONMENT=${ENVIRONMENT}
     expose:
       - "8081"
     ports: ["8081:8081"]  

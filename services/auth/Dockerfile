@@ -73,6 +73,7 @@ WORKDIR /moneymate/services/auth
 RUN git config --global --add safe.directory /moneymate-backend
 
 RUN go install github.com/air-verse/air@latest
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 CMD ["air", "-c", ".air.toml"]
 

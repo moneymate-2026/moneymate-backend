@@ -21,6 +21,7 @@ type AuthUsecase interface {
 	Register(ctx context.Context, req RegisterRequest) (*RegisterResponse, error)
 	Login(ctx context.Context, req LoginRequest) (*LoginResponse, error)
 	Logout(ctx context.Context, req LogoutRequest) error
+	RefreshToken(ctx context.Context, req RefreshTokenRequest) (*RefreshTokenResponse, error)
 }
 
 // ── DI interfaces ────────────────────────────────────────────────
@@ -87,7 +88,8 @@ func (u *authUsecase) Register(ctx context.Context, req RegisterRequest) (*Regis
 	if err:=validatePassword(req.Password);err!=nil{
 		return nil,err
 	}
-	if req.AccountType != domain.AccountTypeUser && req.AccountType != domain.AccountTypeMerchant {
+	if req.AccountType != domain.AccountTypeUser && req.AccountType != domain.AccountTypeMerchant &&
+		req.AccountType != domain.AccountTypeAdmin {
 		return nil, apperrors.ErrInvalidInput
 	}
 	phone := strings.TrimSpace(req.Phone)
@@ -308,6 +310,109 @@ func (u *authUsecase) Logout(ctx context.Context, req LogoutRequest) error {
 		return fmt.Errorf("revoke refresh token: %w", err)
 	}
 	return nil
+}
+
+// ── Refresh Token ──────────────────────────────────────────────────
+
+func (u *authUsecase) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*RefreshTokenResponse, error) {
+    if req.RefreshToken == "" {
+        return nil, apperrors.ErrInvalidInput
+    }
+
+    // 1. Parse the refresh token JWT
+    claims, err := jwtutil.ParseRefreshToken(req.RefreshToken, u.jwtCfg.RefreshSecret)
+    if err != nil {
+        if err == apperrors.ErrTokenExpired {
+            return nil, apperrors.ErrTokenExpired
+        }
+        return nil, apperrors.ErrInvalidToken
+    }
+
+    // 2. Look up the token hash in DB
+    hash := jwtutil.HashToken(req.RefreshToken)
+    stored, err := u.refreshTokenRepo.GetByTokenHash(ctx, hash)
+    if err != nil {
+        if err == apperrors.ErrNotFound {
+            return nil, apperrors.ErrInvalidToken
+        }
+        return nil, fmt.Errorf("lookup refresh token: %w", err)
+    }
+
+    // 3. Check if revoked
+    if stored.RevokedAt != nil {
+        return nil, apperrors.ErrInvalidToken
+    }
+
+    // 4. Check if expired
+    if time.Now().After(stored.ExpiresAt) {
+        return nil, apperrors.ErrTokenExpired
+    }
+
+    // 5. Parse user ID from claims
+    userID, err := uuid.Parse(claims.UserID)
+    if err != nil {
+        return nil, apperrors.ErrInvalidToken
+    }
+
+    // 6. Fetch user + roles + token version
+    user, err := u.userRepo.GetByID(ctx, userID)
+    if err != nil {
+        return nil, apperrors.ErrInvalidToken
+    }
+
+    if user.Status != domain.UserStatusActive {
+        return nil, apperrors.ErrForbidden
+    }
+
+    roles, tokenVersion, err := parallelrunners.Query2(ctx,
+        func(ctx context.Context) ([]domain.Role, error) { return u.roleRepo.GetUserRoles(ctx, userID) },
+        func(ctx context.Context) (int64, error) { return u.userRepo.GetTokenVersion(ctx, userID) },
+    )
+    if err != nil {
+        return nil, fmt.Errorf("load refresh context: %w", err)
+    }
+
+    roleNames := make([]string, len(roles))
+    for i, r := range roles {
+        roleNames[i] = r.Name
+    }
+
+    // 7. Issue new access token
+    accessToken, accessExp, err := u.issuer.IssueAccessToken(user.ID, user.Handle, roleNames, tokenVersion)
+    if err != nil {
+        return nil, fmt.Errorf("issue access token: %w", err)
+    }
+
+    // 8. Issue new refresh token (rotation)
+    newRefreshToken, newRefreshHash, refreshExp, err := u.issuer.IssueRefreshToken(user.ID, claims.DeviceID)
+    if err != nil {
+        return nil, fmt.Errorf("issue refresh token: %w", err)
+    }
+
+    // 9. Revoke old refresh token
+    if err := u.refreshTokenRepo.Revoke(ctx, hash); err != nil {
+        return nil, fmt.Errorf("revoke old refresh token: %w", err)
+    }
+
+    // 10. Persist new refresh token
+    refreshID, err := u.idGen.NewV7()
+    if err != nil {
+        return nil, fmt.Errorf("generate refresh token id: %w", err)
+    }
+    if err := u.refreshTokenRepo.Create(ctx, &domain.RefreshToken{
+        ID:        refreshID,
+        UserID:    user.ID,
+        TokenHash: newRefreshHash,
+        ExpiresAt: refreshExp,
+    }); err != nil {
+        return nil, fmt.Errorf("persist refresh token: %w", err)
+    }
+
+    return &RefreshTokenResponse{
+        AccessToken:     accessToken,
+        RefreshToken:    newRefreshToken,
+        AccessExpiresAt: accessExp,
+    }, nil
 }
 
 // ── Helpers ────────────────────────────────────────────────────

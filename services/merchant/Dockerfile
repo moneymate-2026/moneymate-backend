@@ -23,6 +23,9 @@ WORKDIR /moneymate/services/merchant
 # install air for hot reload
 RUN go install github.com/air-verse/air@latest
 
+# install migrate CLI for database migrations
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
 # air watches for changes and rebuilds
 CMD ["air", "-c", ".air.toml"]
 

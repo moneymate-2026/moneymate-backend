@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
@@ -13,6 +14,7 @@ import (
 
 func handleError(c fiber.Ctx, err error) error {
 	appErr := apperrors.ParseError(err)
+	log.Printf("[ERROR] %s %s | %d %s: %v", c.Method(), c.Path(), appErr.StatusCode, appErr.Code, appErr.Err)
 	return response.Response(c, appErr.StatusCode, appErr.Message, appErr.Details, false)
 }
 
