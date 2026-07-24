@@ -15,22 +15,23 @@ import (
 const createStore = `-- name: CreateStore :one
 INSERT INTO stores (
     owner_id, owner_name, contact_email, mobile_number, 
-    legal_name, dba_name, type, tax_id, display_id
+    legal_name, dba_name, business_type, tax_id, registered_address, display_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING id, display_id, status, plan, created_at
 `
 
 type CreateStoreParams struct {
-	OwnerID      uuid.UUID
-	OwnerName    string
-	ContactEmail string
-	MobileNumber string
-	LegalName    string
-	DbaName      *string
-	Type         BusinessType
-	TaxID        *string
-	DisplayID    string
+	OwnerID           uuid.UUID
+	OwnerName         string
+	ContactEmail      string
+	MobileNumber      string
+	LegalName         string
+	DbaName           *string
+	BusinessType      string
+	TaxID             *string
+	RegisteredAddress string
+	DisplayID         string
 }
 
 type CreateStoreRow struct {
@@ -49,8 +50,9 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Creat
 		arg.MobileNumber,
 		arg.LegalName,
 		arg.DbaName,
-		arg.Type,
+		arg.BusinessType,
 		arg.TaxID,
+		arg.RegisteredAddress,
 		arg.DisplayID,
 	)
 	var i CreateStoreRow
@@ -62,6 +64,54 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Creat
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getPendingStores = `-- name: GetPendingStores :many
+SELECT 
+    id, owner_name, contact_email, mobile_number, legal_name, business_type, status, created_at
+FROM stores
+WHERE status = 'pending_kyc'
+ORDER BY created_at ASC
+`
+
+type GetPendingStoresRow struct {
+	ID           uuid.UUID
+	OwnerName    string
+	ContactEmail string
+	MobileNumber string
+	LegalName    string
+	BusinessType string
+	Status       MerchantStatus
+	CreatedAt    time.Time
+}
+
+func (q *Queries) GetPendingStores(ctx context.Context) ([]GetPendingStoresRow, error) {
+	rows, err := q.db.Query(ctx, getPendingStores)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPendingStoresRow{}
+	for rows.Next() {
+		var i GetPendingStoresRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerName,
+			&i.ContactEmail,
+			&i.MobileNumber,
+			&i.LegalName,
+			&i.BusinessType,
+			&i.Status,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getStoreByOwnerID = `-- name: GetStoreByOwnerID :one

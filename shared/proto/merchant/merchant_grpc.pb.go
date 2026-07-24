@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v3.21.12
-// source: shared/proto/merchant/merchant.proto
+// source: merchant/merchant.proto
 
 package merchant
 
@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	MerchantService_RegisterStore_FullMethodName = "/merchant.MerchantService/RegisterStore"
+	MerchantService_GetStore_FullMethodName      = "/merchant.MerchantService/GetStore"
 )
 
 // MerchantServiceClient is the client API for MerchantService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MerchantServiceClient interface {
 	RegisterStore(ctx context.Context, in *RegisterStoreRequest, opts ...grpc.CallOption) (*RegisterStoreResponse, error)
+	GetStore(ctx context.Context, in *GetStoreRequest, opts ...grpc.CallOption) (*GetStoreResponse, error)
 }
 
 type merchantServiceClient struct {
@@ -47,11 +49,22 @@ func (c *merchantServiceClient) RegisterStore(ctx context.Context, in *RegisterS
 	return out, nil
 }
 
+func (c *merchantServiceClient) GetStore(ctx context.Context, in *GetStoreRequest, opts ...grpc.CallOption) (*GetStoreResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStoreResponse)
+	err := c.cc.Invoke(ctx, MerchantService_GetStore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MerchantServiceServer is the server API for MerchantService service.
 // All implementations must embed UnimplementedMerchantServiceServer
 // for forward compatibility.
 type MerchantServiceServer interface {
 	RegisterStore(context.Context, *RegisterStoreRequest) (*RegisterStoreResponse, error)
+	GetStore(context.Context, *GetStoreRequest) (*GetStoreResponse, error)
 	mustEmbedUnimplementedMerchantServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedMerchantServiceServer struct{}
 
 func (UnimplementedMerchantServiceServer) RegisterStore(context.Context, *RegisterStoreRequest) (*RegisterStoreResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterStore not implemented")
+}
+func (UnimplementedMerchantServiceServer) GetStore(context.Context, *GetStoreRequest) (*GetStoreResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStore not implemented")
 }
 func (UnimplementedMerchantServiceServer) mustEmbedUnimplementedMerchantServiceServer() {}
 func (UnimplementedMerchantServiceServer) testEmbeddedByValue()                         {}
@@ -104,6 +120,24 @@ func _MerchantService_RegisterStore_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MerchantService_GetStore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).GetStore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_GetStore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).GetStore(ctx, req.(*GetStoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MerchantService_ServiceDesc is the grpc.ServiceDesc for MerchantService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,7 +149,11 @@ var MerchantService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "RegisterStore",
 			Handler:    _MerchantService_RegisterStore_Handler,
 		},
+		{
+			MethodName: "GetStore",
+			Handler:    _MerchantService_GetStore_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "shared/proto/merchant/merchant.proto",
+	Metadata: "merchant/merchant.proto",
 }

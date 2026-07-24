@@ -27,15 +27,16 @@ func NewStoreRepo(db *pgxpool.Pool) *StoreRepo {
 // RegisterStore commits step 1 and 2 of the merchant onboarding flow.
 func (r *StoreRepo) RegisterStore(ctx context.Context, store *domain.Store) (*domain.Store, error) {
 	arg := generated.CreateStoreParams{
-		OwnerID:      store.OwnerID,
-		OwnerName:    store.OwnerName,
-		ContactEmail: store.ContactEmail,
-		MobileNumber: store.MobileNumber,
-		LegalName:    store.LegalName,
-		DbaName:      store.DBAName,
-		Type:         generated.BusinessType(store.Type),
-		TaxID:        store.TaxID,
-		DisplayID:    store.DisplayID,
+		OwnerID:           store.OwnerID,
+		OwnerName:         store.OwnerName,
+		ContactEmail:      store.ContactEmail,
+		MobileNumber:      store.MobileNumber,
+		LegalName:         store.LegalName,
+		DbaName:           store.DBAName,
+		BusinessType:      store.Type, // store.Type is mapped to BusinessType string
+		TaxID:             store.TaxID,
+		RegisteredAddress: store.RegisteredAddress,
+		DisplayID:         store.DisplayID,
 	}
 
 	row, err := r.q.CreateStore(ctx, arg)
@@ -93,4 +94,27 @@ func (r *StoreRepo) UpdateStoreStatus(ctx context.Context, storeID uuid.UUID, st
 		return fmt.Errorf("StoreRepo.UpdateStoreStatus failed: %w", err)
 	}
 	return nil
+}
+
+// GetPendingStores retrieves all merchants in the 'pending_kyc' status.
+func (r *StoreRepo) GetPendingStores(ctx context.Context) ([]*domain.Store, error) {
+	rows, err := r.q.GetPendingStores(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("StoreRepo.GetPendingStores failed: %w", err)
+	}
+
+	var stores []*domain.Store
+	for _, row := range rows {
+		stores = append(stores, &domain.Store{
+			ID:           row.ID,
+			OwnerName:    row.OwnerName,
+			ContactEmail: row.ContactEmail,
+			MobileNumber: row.MobileNumber,
+			LegalName:    row.LegalName,
+			Type:         row.BusinessType,
+			Status:       string(row.Status),
+			CreatedAt:    row.CreatedAt,
+		})
+	}
+	return stores, nil
 }

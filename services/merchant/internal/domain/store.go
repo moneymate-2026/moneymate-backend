@@ -16,13 +16,14 @@ type Store struct {
 	OwnerName    string
 	ContactEmail string
 	MobileNumber string
-	LegalName    string
-	DBAName      *string
-	Type         string
-	TaxID        *string
-	DisplayID    string
-	Status       string
-	Plan         string
+	LegalName         string
+	DBAName           *string
+	Type              string
+	TaxID             *string
+	RegisteredAddress string
+	DisplayID         string
+	Status            string
+	Plan              string
 }
 
 // KYCDocument represents compliance data.
@@ -44,4 +45,5 @@ type MerchantRepository interface {
 	SubmitKYC(ctx context.Context, kyc *KYCDocument) error
 	GetStoreByOwnerID(ctx context.Context, ownerID uuid.UUID) (*Store, error)
 	UpdateStoreStatus(ctx context.Context, storeID uuid.UUID, status string) error
+	GetPendingStores(ctx context.Context) ([]*Store, error)
 }

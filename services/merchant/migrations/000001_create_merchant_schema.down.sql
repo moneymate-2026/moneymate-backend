@@ -12,5 +12,4 @@ DROP TABLE IF EXISTS stores;
 
 -- 3. Drop ENUM Types (Must drop after tables that reference them)
 DROP TYPE IF EXISTS subscription_plan;
-DROP TYPE IF EXISTS business_type;
 DROP TYPE IF EXISTS merchant_status;

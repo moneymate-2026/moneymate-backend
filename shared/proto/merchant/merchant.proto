@@ -7,6 +7,19 @@ option go_package = "github.com/moneymate-2026/moneymate-backend/shared/proto/me
 
 service MerchantService {
   rpc RegisterStore(RegisterStoreRequest) returns (RegisterStoreResponse);
+  rpc GetStore(GetStoreRequest) returns (GetStoreResponse);
+}
+
+message GetStoreRequest {
+  string owner_id = 1;
+}
+
+message GetStoreResponse {
+  string store_id = 1;
+  string display_id = 2;
+  string status = 3;
+  string plan = 4;
+  string legal_name = 5;
 }
 
 message RegisterStoreRequest {
@@ -15,9 +28,13 @@ message RegisterStoreRequest {
   string contact_email = 3;
   string mobile_number = 4;
   string legal_name = 5;
-  string type = 6;
+  string business_type = 6;
   string dba_name = 7;
   string tax_id = 8;
+  string registered_address = 9;
+  string aadhar_number = 10;
+  string aadhar_doc_url = 11;
+  string shop_license_url = 12;
 }
 
 message RegisterStoreResponse {

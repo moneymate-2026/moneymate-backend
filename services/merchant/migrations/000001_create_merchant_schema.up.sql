@@ -6,14 +6,6 @@ CREATE TYPE merchant_status AS ENUM (
     'deleted'
 );
 
-CREATE TYPE business_type AS ENUM (
-    'limited_liability_company',  -- UI: Limited Liability Company (LLC)
-    'corporation',                -- UI: Corporation
-    'sole_proprietorship',        -- UI: Sole Proprietorship
-    'partnership',
-    'other'
-);
-
 CREATE TYPE subscription_plan AS ENUM (
     'essential',                  -- UI: Essential Plan
     'growth',                     -- UI: Growth Plan
@@ -33,8 +25,9 @@ CREATE TABLE stores (
     -- Business Details (Step 1)
     legal_name          VARCHAR(255) NOT NULL,
     dba_name            VARCHAR(255),
-    type                business_type NOT NULL,
+    business_type       VARCHAR(255) NOT NULL,
     tax_id              VARCHAR(100),
+    registered_address  TEXT NOT NULL,
     
     -- System Generated (QR & State)
     display_id          VARCHAR(20) NOT NULL UNIQUE, -- UI: ID: MM-9823-XA

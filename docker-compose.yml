@@ -1,4 +1,31 @@
 services:
+  merchant:
+    build:
+      context: .
+      dockerfile: ./services/merchant/Dockerfile
+      target: dev
+    volumes:
+      - ./:/moneymate-backend
+      - ./shared:/moneymate-backend/shared
+    working_dir: /moneymate-backend/services/merchant
+    env_file:
+      - .env
+    environment:
+      - CONFIG_PATH=/moneymate-backend/services/merchant/config/config.yaml
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - ENVIRONMENT=dev
+    expose:
+      - "50053"
+    ports:
+      - "50053:50053"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - moneymate-network
+
   gateway:
     build:
       context: .

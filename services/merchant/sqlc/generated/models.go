@@ -13,51 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type BusinessType string
-
-const (
-	BusinessTypeLimitedLiabilityCompany BusinessType = "limited_liability_company"
-	BusinessTypeCorporation             BusinessType = "corporation"
-	BusinessTypeSoleProprietorship      BusinessType = "sole_proprietorship"
-	BusinessTypePartnership             BusinessType = "partnership"
-	BusinessTypeOther                   BusinessType = "other"
-)
-
-func (e *BusinessType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = BusinessType(s)
-	case string:
-		*e = BusinessType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for BusinessType: %T", src)
-	}
-	return nil
-}
-
-type NullBusinessType struct {
-	BusinessType BusinessType
-	Valid        bool // Valid is true if BusinessType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullBusinessType) Scan(value interface{}) error {
-	if value == nil {
-		ns.BusinessType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.BusinessType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullBusinessType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.BusinessType), nil
-}
-
 type MerchantStatus string
 
 const (
@@ -173,18 +128,19 @@ type KycDocument struct {
 }
 
 type Store struct {
-	ID           uuid.UUID
-	OwnerID      uuid.UUID
-	OwnerName    string
-	ContactEmail string
-	MobileNumber string
-	LegalName    string
-	DbaName      *string
-	Type         BusinessType
-	TaxID        *string
-	DisplayID    string
-	Status       MerchantStatus
-	Plan         SubscriptionPlan
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                uuid.UUID
+	OwnerID           uuid.UUID
+	OwnerName         string
+	ContactEmail      string
+	MobileNumber      string
+	LegalName         string
+	DbaName           *string
+	BusinessType      string
+	TaxID             *string
+	RegisteredAddress string
+	DisplayID         string
+	Status            MerchantStatus
+	Plan              SubscriptionPlan
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }

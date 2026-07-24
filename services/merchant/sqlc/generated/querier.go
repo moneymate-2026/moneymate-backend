@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	CreateStore(ctx context.Context, arg CreateStoreParams) (CreateStoreRow, error)
+	GetPendingStores(ctx context.Context) ([]GetPendingStoresRow, error)
 	GetStoreByOwnerID(ctx context.Context, ownerID uuid.UUID) (GetStoreByOwnerIDRow, error)
 	SubmitKYC(ctx context.Context, arg SubmitKYCParams) error
 	UpdateStoreStatus(ctx context.Context, arg UpdateStoreStatusParams) error

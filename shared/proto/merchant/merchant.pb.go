@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: shared/proto/merchant/merchant.proto
+// source: merchant/merchant.proto
 
 package merchant
 
@@ -21,23 +21,147 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type RegisterStoreRequest struct {
+type GetStoreRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OwnerId       string                 `protobuf:"bytes,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
-	OwnerName     string                 `protobuf:"bytes,2,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
-	ContactEmail  string                 `protobuf:"bytes,3,opt,name=contact_email,json=contactEmail,proto3" json:"contact_email,omitempty"`
-	MobileNumber  string                 `protobuf:"bytes,4,opt,name=mobile_number,json=mobileNumber,proto3" json:"mobile_number,omitempty"`
-	LegalName     string                 `protobuf:"bytes,5,opt,name=legal_name,json=legalName,proto3" json:"legal_name,omitempty"`
-	Type          string                 `protobuf:"bytes,6,opt,name=type,proto3" json:"type,omitempty"`
-	DbaName       string                 `protobuf:"bytes,7,opt,name=dba_name,json=dbaName,proto3" json:"dba_name,omitempty"`
-	TaxId         string                 `protobuf:"bytes,8,opt,name=tax_id,json=taxId,proto3" json:"tax_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *GetStoreRequest) Reset() {
+	*x = GetStoreRequest{}
+	mi := &file_merchant_merchant_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStoreRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStoreRequest) ProtoMessage() {}
+
+func (x *GetStoreRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_merchant_merchant_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStoreRequest.ProtoReflect.Descriptor instead.
+func (*GetStoreRequest) Descriptor() ([]byte, []int) {
+	return file_merchant_merchant_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetStoreRequest) GetOwnerId() string {
+	if x != nil {
+		return x.OwnerId
+	}
+	return ""
+}
+
+type GetStoreResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StoreId       string                 `protobuf:"bytes,1,opt,name=store_id,json=storeId,proto3" json:"store_id,omitempty"`
+	DisplayId     string                 `protobuf:"bytes,2,opt,name=display_id,json=displayId,proto3" json:"display_id,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Plan          string                 `protobuf:"bytes,4,opt,name=plan,proto3" json:"plan,omitempty"`
+	LegalName     string                 `protobuf:"bytes,5,opt,name=legal_name,json=legalName,proto3" json:"legal_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStoreResponse) Reset() {
+	*x = GetStoreResponse{}
+	mi := &file_merchant_merchant_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStoreResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStoreResponse) ProtoMessage() {}
+
+func (x *GetStoreResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_merchant_merchant_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStoreResponse.ProtoReflect.Descriptor instead.
+func (*GetStoreResponse) Descriptor() ([]byte, []int) {
+	return file_merchant_merchant_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetStoreResponse) GetStoreId() string {
+	if x != nil {
+		return x.StoreId
+	}
+	return ""
+}
+
+func (x *GetStoreResponse) GetDisplayId() string {
+	if x != nil {
+		return x.DisplayId
+	}
+	return ""
+}
+
+func (x *GetStoreResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *GetStoreResponse) GetPlan() string {
+	if x != nil {
+		return x.Plan
+	}
+	return ""
+}
+
+func (x *GetStoreResponse) GetLegalName() string {
+	if x != nil {
+		return x.LegalName
+	}
+	return ""
+}
+
+type RegisterStoreRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	OwnerId           string                 `protobuf:"bytes,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	OwnerName         string                 `protobuf:"bytes,2,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
+	ContactEmail      string                 `protobuf:"bytes,3,opt,name=contact_email,json=contactEmail,proto3" json:"contact_email,omitempty"`
+	MobileNumber      string                 `protobuf:"bytes,4,opt,name=mobile_number,json=mobileNumber,proto3" json:"mobile_number,omitempty"`
+	LegalName         string                 `protobuf:"bytes,5,opt,name=legal_name,json=legalName,proto3" json:"legal_name,omitempty"`
+	BusinessType      string                 `protobuf:"bytes,6,opt,name=business_type,json=businessType,proto3" json:"business_type,omitempty"`
+	DbaName           string                 `protobuf:"bytes,7,opt,name=dba_name,json=dbaName,proto3" json:"dba_name,omitempty"`
+	TaxId             string                 `protobuf:"bytes,8,opt,name=tax_id,json=taxId,proto3" json:"tax_id,omitempty"`
+	RegisteredAddress string                 `protobuf:"bytes,9,opt,name=registered_address,json=registeredAddress,proto3" json:"registered_address,omitempty"`
+	AadharNumber      string                 `protobuf:"bytes,10,opt,name=aadhar_number,json=aadharNumber,proto3" json:"aadhar_number,omitempty"`
+	AadharDocUrl      string                 `protobuf:"bytes,11,opt,name=aadhar_doc_url,json=aadharDocUrl,proto3" json:"aadhar_doc_url,omitempty"`
+	ShopLicenseUrl    string                 `protobuf:"bytes,12,opt,name=shop_license_url,json=shopLicenseUrl,proto3" json:"shop_license_url,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
 func (x *RegisterStoreRequest) Reset() {
 	*x = RegisterStoreRequest{}
-	mi := &file_shared_proto_merchant_merchant_proto_msgTypes[0]
+	mi := &file_merchant_merchant_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +173,7 @@ func (x *RegisterStoreRequest) String() string {
 func (*RegisterStoreRequest) ProtoMessage() {}
 
 func (x *RegisterStoreRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_proto_merchant_merchant_proto_msgTypes[0]
+	mi := &file_merchant_merchant_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +186,7 @@ func (x *RegisterStoreRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterStoreRequest.ProtoReflect.Descriptor instead.
 func (*RegisterStoreRequest) Descriptor() ([]byte, []int) {
-	return file_shared_proto_merchant_merchant_proto_rawDescGZIP(), []int{0}
+	return file_merchant_merchant_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RegisterStoreRequest) GetOwnerId() string {
@@ -100,9 +224,9 @@ func (x *RegisterStoreRequest) GetLegalName() string {
 	return ""
 }
 
-func (x *RegisterStoreRequest) GetType() string {
+func (x *RegisterStoreRequest) GetBusinessType() string {
 	if x != nil {
-		return x.Type
+		return x.BusinessType
 	}
 	return ""
 }
@@ -121,6 +245,34 @@ func (x *RegisterStoreRequest) GetTaxId() string {
 	return ""
 }
 
+func (x *RegisterStoreRequest) GetRegisteredAddress() string {
+	if x != nil {
+		return x.RegisteredAddress
+	}
+	return ""
+}
+
+func (x *RegisterStoreRequest) GetAadharNumber() string {
+	if x != nil {
+		return x.AadharNumber
+	}
+	return ""
+}
+
+func (x *RegisterStoreRequest) GetAadharDocUrl() string {
+	if x != nil {
+		return x.AadharDocUrl
+	}
+	return ""
+}
+
+func (x *RegisterStoreRequest) GetShopLicenseUrl() string {
+	if x != nil {
+		return x.ShopLicenseUrl
+	}
+	return ""
+}
+
 type RegisterStoreResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StoreId       string                 `protobuf:"bytes,1,opt,name=store_id,json=storeId,proto3" json:"store_id,omitempty"`
@@ -133,7 +285,7 @@ type RegisterStoreResponse struct {
 
 func (x *RegisterStoreResponse) Reset() {
 	*x = RegisterStoreResponse{}
-	mi := &file_shared_proto_merchant_merchant_proto_msgTypes[1]
+	mi := &file_merchant_merchant_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -145,7 +297,7 @@ func (x *RegisterStoreResponse) String() string {
 func (*RegisterStoreResponse) ProtoMessage() {}
 
 func (x *RegisterStoreResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_proto_merchant_merchant_proto_msgTypes[1]
+	mi := &file_merchant_merchant_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -158,7 +310,7 @@ func (x *RegisterStoreResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterStoreResponse.ProtoReflect.Descriptor instead.
 func (*RegisterStoreResponse) Descriptor() ([]byte, []int) {
-	return file_shared_proto_merchant_merchant_proto_rawDescGZIP(), []int{1}
+	return file_merchant_merchant_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RegisterStoreResponse) GetStoreId() string {
@@ -189,11 +341,21 @@ func (x *RegisterStoreResponse) GetPlan() string {
 	return ""
 }
 
-var File_shared_proto_merchant_merchant_proto protoreflect.FileDescriptor
+var File_merchant_merchant_proto protoreflect.FileDescriptor
 
-const file_shared_proto_merchant_merchant_proto_rawDesc = "" +
+const file_merchant_merchant_proto_rawDesc = "" +
 	"\n" +
-	"$shared/proto/merchant/merchant.proto\x12\bmerchant\"\xff\x01\n" +
+	"\x17merchant/merchant.proto\x12\bmerchant\",\n" +
+	"\x0fGetStoreRequest\x12\x19\n" +
+	"\bowner_id\x18\x01 \x01(\tR\aownerId\"\x97\x01\n" +
+	"\x10GetStoreResponse\x12\x19\n" +
+	"\bstore_id\x18\x01 \x01(\tR\astoreId\x12\x1d\n" +
+	"\n" +
+	"display_id\x18\x02 \x01(\tR\tdisplayId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12\x12\n" +
+	"\x04plan\x18\x04 \x01(\tR\x04plan\x12\x1d\n" +
+	"\n" +
+	"legal_name\x18\x05 \x01(\tR\tlegalName\"\xb4\x03\n" +
 	"\x14RegisterStoreRequest\x12\x19\n" +
 	"\bowner_id\x18\x01 \x01(\tR\aownerId\x12\x1d\n" +
 	"\n" +
@@ -201,66 +363,76 @@ const file_shared_proto_merchant_merchant_proto_rawDesc = "" +
 	"\rcontact_email\x18\x03 \x01(\tR\fcontactEmail\x12#\n" +
 	"\rmobile_number\x18\x04 \x01(\tR\fmobileNumber\x12\x1d\n" +
 	"\n" +
-	"legal_name\x18\x05 \x01(\tR\tlegalName\x12\x12\n" +
-	"\x04type\x18\x06 \x01(\tR\x04type\x12\x19\n" +
+	"legal_name\x18\x05 \x01(\tR\tlegalName\x12#\n" +
+	"\rbusiness_type\x18\x06 \x01(\tR\fbusinessType\x12\x19\n" +
 	"\bdba_name\x18\a \x01(\tR\adbaName\x12\x15\n" +
-	"\x06tax_id\x18\b \x01(\tR\x05taxId\"}\n" +
+	"\x06tax_id\x18\b \x01(\tR\x05taxId\x12-\n" +
+	"\x12registered_address\x18\t \x01(\tR\x11registeredAddress\x12#\n" +
+	"\raadhar_number\x18\n" +
+	" \x01(\tR\faadharNumber\x12$\n" +
+	"\x0eaadhar_doc_url\x18\v \x01(\tR\faadharDocUrl\x12(\n" +
+	"\x10shop_license_url\x18\f \x01(\tR\x0eshopLicenseUrl\"}\n" +
 	"\x15RegisterStoreResponse\x12\x19\n" +
 	"\bstore_id\x18\x01 \x01(\tR\astoreId\x12\x1d\n" +
 	"\n" +
 	"display_id\x18\x02 \x01(\tR\tdisplayId\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12\x12\n" +
-	"\x04plan\x18\x04 \x01(\tR\x04plan2c\n" +
+	"\x04plan\x18\x04 \x01(\tR\x04plan2\xa6\x01\n" +
 	"\x0fMerchantService\x12P\n" +
-	"\rRegisterStore\x12\x1e.merchant.RegisterStoreRequest\x1a\x1f.merchant.RegisterStoreResponseBCZAgithub.com/moneymate-2026/moneymate-backend/shared/proto/merchantb\x06proto3"
+	"\rRegisterStore\x12\x1e.merchant.RegisterStoreRequest\x1a\x1f.merchant.RegisterStoreResponse\x12A\n" +
+	"\bGetStore\x12\x19.merchant.GetStoreRequest\x1a\x1a.merchant.GetStoreResponseBCZAgithub.com/moneymate-2026/moneymate-backend/shared/proto/merchantb\x06proto3"
 
 var (
-	file_shared_proto_merchant_merchant_proto_rawDescOnce sync.Once
-	file_shared_proto_merchant_merchant_proto_rawDescData []byte
+	file_merchant_merchant_proto_rawDescOnce sync.Once
+	file_merchant_merchant_proto_rawDescData []byte
 )
 
-func file_shared_proto_merchant_merchant_proto_rawDescGZIP() []byte {
-	file_shared_proto_merchant_merchant_proto_rawDescOnce.Do(func() {
-		file_shared_proto_merchant_merchant_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_shared_proto_merchant_merchant_proto_rawDesc), len(file_shared_proto_merchant_merchant_proto_rawDesc)))
+func file_merchant_merchant_proto_rawDescGZIP() []byte {
+	file_merchant_merchant_proto_rawDescOnce.Do(func() {
+		file_merchant_merchant_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_merchant_merchant_proto_rawDesc), len(file_merchant_merchant_proto_rawDesc)))
 	})
-	return file_shared_proto_merchant_merchant_proto_rawDescData
+	return file_merchant_merchant_proto_rawDescData
 }
 
-var file_shared_proto_merchant_merchant_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_shared_proto_merchant_merchant_proto_goTypes = []any{
-	(*RegisterStoreRequest)(nil),  // 0: merchant.RegisterStoreRequest
-	(*RegisterStoreResponse)(nil), // 1: merchant.RegisterStoreResponse
+var file_merchant_merchant_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_merchant_merchant_proto_goTypes = []any{
+	(*GetStoreRequest)(nil),       // 0: merchant.GetStoreRequest
+	(*GetStoreResponse)(nil),      // 1: merchant.GetStoreResponse
+	(*RegisterStoreRequest)(nil),  // 2: merchant.RegisterStoreRequest
+	(*RegisterStoreResponse)(nil), // 3: merchant.RegisterStoreResponse
 }
-var file_shared_proto_merchant_merchant_proto_depIdxs = []int32{
-	0, // 0: merchant.MerchantService.RegisterStore:input_type -> merchant.RegisterStoreRequest
-	1, // 1: merchant.MerchantService.RegisterStore:output_type -> merchant.RegisterStoreResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+var file_merchant_merchant_proto_depIdxs = []int32{
+	2, // 0: merchant.MerchantService.RegisterStore:input_type -> merchant.RegisterStoreRequest
+	0, // 1: merchant.MerchantService.GetStore:input_type -> merchant.GetStoreRequest
+	3, // 2: merchant.MerchantService.RegisterStore:output_type -> merchant.RegisterStoreResponse
+	1, // 3: merchant.MerchantService.GetStore:output_type -> merchant.GetStoreResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_shared_proto_merchant_merchant_proto_init() }
-func file_shared_proto_merchant_merchant_proto_init() {
-	if File_shared_proto_merchant_merchant_proto != nil {
+func init() { file_merchant_merchant_proto_init() }
+func file_merchant_merchant_proto_init() {
+	if File_merchant_merchant_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shared_proto_merchant_merchant_proto_rawDesc), len(file_shared_proto_merchant_merchant_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_merchant_merchant_proto_rawDesc), len(file_merchant_merchant_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_shared_proto_merchant_merchant_proto_goTypes,
-		DependencyIndexes: file_shared_proto_merchant_merchant_proto_depIdxs,
-		MessageInfos:      file_shared_proto_merchant_merchant_proto_msgTypes,
+		GoTypes:           file_merchant_merchant_proto_goTypes,
+		DependencyIndexes: file_merchant_merchant_proto_depIdxs,
+		MessageInfos:      file_merchant_merchant_proto_msgTypes,
 	}.Build()
-	File_shared_proto_merchant_merchant_proto = out.File
-	file_shared_proto_merchant_merchant_proto_goTypes = nil
-	file_shared_proto_merchant_merchant_proto_depIdxs = nil
+	File_merchant_merchant_proto = out.File
+	file_merchant_merchant_proto_goTypes = nil
+	file_merchant_merchant_proto_depIdxs = nil
 }
