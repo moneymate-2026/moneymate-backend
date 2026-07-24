@@ -9,7 +9,7 @@ database:
   min_open_conns: 5
   max_conn_lifetime: 15m
   max_idle_time: 5m
-  migrations_path: "services/auth/migrations"
+  migrations_path: "/app/migrations"
 
 redis:
   token_ttl: 60s

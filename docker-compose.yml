@@ -63,6 +63,7 @@ services:
     volumes:
       - ./:/moneymate-backend
       - ./shared:/moneymate-backend/shared
+      - ./services/auth/migrations:/app/migrations
     working_dir: /moneymate-backend/services/auth
     env_file:
       - .env
