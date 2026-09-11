@@ -17,15 +17,24 @@ const countTransactionsByAccount = `-- name: CountTransactionsByAccount :one
 SELECT COUNT(*) FROM payment.transactions
 WHERE (from_account_id = $1::uuid OR to_account_id = $1::uuid)
   AND ($2::uuid IS NULL OR category_id = $2)
+  AND ($3::timestamptz IS NULL OR created_at >= $3)
+  AND ($4::timestamptz IS NULL OR created_at < $4)
 `
 
 type CountTransactionsByAccountParams struct {
 	AccountID  uuid.UUID
 	CategoryID pgtype.UUID
+	FromDate   pgtype.Timestamptz
+	ToDate     pgtype.Timestamptz
 }
 
 func (q *Queries) CountTransactionsByAccount(ctx context.Context, arg CountTransactionsByAccountParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTransactionsByAccount, arg.AccountID, arg.CategoryID)
+	row := q.db.QueryRow(ctx, countTransactionsByAccount,
+		arg.AccountID,
+		arg.CategoryID,
+		arg.FromDate,
+		arg.ToDate,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -330,6 +339,8 @@ const listTransactionsByAccountPaginated = `-- name: ListTransactionsByAccountPa
 SELECT id, from_account_id, to_account_id, amount, status, idempotency_key, description, created_at, completed_at, category_id FROM payment.transactions
 WHERE (from_account_id = $3::uuid OR to_account_id = $3::uuid)
   AND ($4::uuid IS NULL OR category_id = $4)
+  AND ($5::timestamptz IS NULL OR created_at >= $5)
+  AND ($6::timestamptz IS NULL OR created_at < $6)
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -339,6 +350,8 @@ type ListTransactionsByAccountPaginatedParams struct {
 	Offset     int32
 	AccountID  uuid.UUID
 	CategoryID pgtype.UUID
+	FromDate   pgtype.Timestamptz
+	ToDate     pgtype.Timestamptz
 }
 
 func (q *Queries) ListTransactionsByAccountPaginated(ctx context.Context, arg ListTransactionsByAccountPaginatedParams) ([]PaymentTransaction, error) {
@@ -347,6 +360,8 @@ func (q *Queries) ListTransactionsByAccountPaginated(ctx context.Context, arg Li
 		arg.Offset,
 		arg.AccountID,
 		arg.CategoryID,
+		arg.FromDate,
+		arg.ToDate,
 	)
 	if err != nil {
 		return nil, err

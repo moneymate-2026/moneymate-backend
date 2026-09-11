@@ -3,12 +3,14 @@ package http
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 
 	"github.com/moneymate-2026/moneymate-backend/services/payment/internal/domain"
 	"github.com/moneymate-2026/moneymate-backend/services/payment/internal/usecases"
+	apperrors "github.com/moneymate-2026/moneymate-backend/shared/pkg/errors"
 	"github.com/moneymate-2026/moneymate-backend/shared/pkg/money"
 	response "github.com/moneymate-2026/moneymate-backend/shared/pkg/responses"
 )
@@ -95,8 +97,6 @@ func toTransactionResponse(t *domain.Transaction) transactionResponse {
 	}
 }
 
-
-
 func (h *TransferHandler) ListMyTransactions(c fiber.Ctx) error {
 	userID := userIDFromLocals(c)
 	if userID == "" {
@@ -111,9 +111,32 @@ func (h *TransferHandler) ListMyTransactions(c fiber.Ctx) error {
 		categoryID = &rawCat
 	}
 
+	var from, to *time.Time
+	if rawFrom := strings.TrimSpace(c.Query("from")); rawFrom != "" {
+		parsedFrom, err := usecases.ParseFromDate(rawFrom)
+		if err != nil {
+			return handleError(c, apperrors.ErrInvalidInput)
+		}
+		from = &parsedFrom
+	}
+
+	if rawTo := strings.TrimSpace(c.Query("to")); rawTo != "" {
+		parsedTo, err := usecases.ParseToDate(rawTo)
+		if err != nil {
+			return handleError(c, apperrors.ErrInvalidInput)
+		}
+		to = &parsedTo
+	}
+
+	if from != nil && to != nil && !to.After(*from) {
+		return handleError(c, apperrors.ErrInvalidInput)
+	}
+
 	result, err := h.transfers.ListMyTransactions(c.Context(), usecases.ListTransactionsInput{
 		AuthenticatedUserID: userID,
 		CategoryID:          categoryID,
+		From:                from,
+		To:                  to,
 		Page:                page,
 		PageSize:            pageSize,
 	})

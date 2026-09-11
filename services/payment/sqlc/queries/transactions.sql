@@ -39,13 +39,17 @@ WHERE id = $1;
 SELECT * FROM payment.transactions
 WHERE (from_account_id = @account_id::uuid OR to_account_id = @account_id::uuid)
   AND (sqlc.narg('category_id')::uuid IS NULL OR category_id = sqlc.narg('category_id'))
+  AND (sqlc.narg('from_date')::timestamptz IS NULL OR created_at >= sqlc.narg('from_date'))
+  AND (sqlc.narg('to_date')::timestamptz IS NULL OR created_at < sqlc.narg('to_date'))
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: CountTransactionsByAccount :one
 SELECT COUNT(*) FROM payment.transactions
 WHERE (from_account_id = @account_id::uuid OR to_account_id = @account_id::uuid)
-  AND (sqlc.narg('category_id')::uuid IS NULL OR category_id = sqlc.narg('category_id'));
+  AND (sqlc.narg('category_id')::uuid IS NULL OR category_id = sqlc.narg('category_id'))
+  AND (sqlc.narg('from_date')::timestamptz IS NULL OR created_at >= sqlc.narg('from_date'))
+  AND (sqlc.narg('to_date')::timestamptz IS NULL OR created_at < sqlc.narg('to_date'));
 
 
 -- name: GetSpendByCategory :many

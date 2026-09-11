@@ -51,7 +51,7 @@ func (u *analyticsUsecase) SpendByCategory(ctx context.Context, authUserID, from
 		return nil, err
 	}
 
-	from, to, err := parseDateRange(fromStr, toStr, time.Now().UTC())
+	from, to, err := ParseDateRange(fromStr, toStr, time.Now().UTC())
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (u *analyticsUsecase) SpendByPeriod(ctx context.Context, authUserID, granul
 		return nil, apperrors.ErrInvalidInput
 	}
 
-	from, to, err := parseDateRange(fromStr, toStr, time.Now().UTC())
+	from, to, err := ParseDateRange(fromStr, toStr, time.Now().UTC())
 	if err != nil {
 		return nil, err
 	}
@@ -114,12 +114,12 @@ func (u *analyticsUsecase) SpendByPeriod(ctx context.Context, authUserID, granul
 	return items, nil
 }
 
-func parseDateRange(fromStr, toStr string, now time.Time) (*time.Time, time.Time, error) {
+func ParseDateRange(fromStr, toStr string, now time.Time) (*time.Time, time.Time, error) {
 	var from *time.Time
 	var to time.Time
 
 	if strings.TrimSpace(fromStr) != "" {
-		parsedFrom, err := parseFromDate(strings.TrimSpace(fromStr))
+		parsedFrom, err := ParseFromDate(strings.TrimSpace(fromStr))
 		if err != nil {
 			return nil, time.Time{}, apperrors.ErrInvalidInput
 		}
@@ -129,7 +129,7 @@ func parseDateRange(fromStr, toStr string, now time.Time) (*time.Time, time.Time
 	if strings.TrimSpace(toStr) == "" {
 		to = now
 	} else {
-		parsedTo, err := parseToDate(strings.TrimSpace(toStr))
+		parsedTo, err := ParseToDate(strings.TrimSpace(toStr))
 		if err != nil {
 			return nil, time.Time{}, apperrors.ErrInvalidInput
 		}
@@ -143,7 +143,11 @@ func parseDateRange(fromStr, toStr string, now time.Time) (*time.Time, time.Time
 	return from, to, nil
 }
 
-func parseFromDate(s string) (time.Time, error) {
+func parseDateRange(fromStr, toStr string, now time.Time) (*time.Time, time.Time, error) {
+	return ParseDateRange(fromStr, toStr, now)
+}
+
+func ParseFromDate(s string) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
 		return t.UTC(), nil
 	}
@@ -159,7 +163,11 @@ func parseFromDate(s string) (time.Time, error) {
 	return time.Time{}, apperrors.ErrInvalidInput
 }
 
-func parseToDate(s string) (time.Time, error) {
+func parseFromDate(s string) (time.Time, error) {
+	return ParseFromDate(s)
+}
+
+func ParseToDate(s string) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
 		return t.UTC(), nil
 	}
@@ -174,4 +182,8 @@ func parseToDate(s string) (time.Time, error) {
 		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, 1), nil
 	}
 	return time.Time{}, apperrors.ErrInvalidInput
+}
+
+func parseToDate(s string) (time.Time, error) {
+	return ParseToDate(s)
 }

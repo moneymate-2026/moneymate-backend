@@ -235,4 +235,35 @@ func TestTransactionRepo_SpendAnalyticsDebitOnly(t *testing.T) {
 			t.Errorf("granularity %q (all-time): expected total debit 17500, got %d", gran, totalAllTimeAmount)
 		}
 	}
+
+	// Test ListByAccountPaginated with date range and category filtering
+	t.Run("ListByAccountPaginated date range and category", func(t *testing.T) {
+		// All time (nil from and to)
+		allTxs, totalCount, err := txRepo.ListByAccountPaginated(ctx, accA.ID, nil, nil, nil, 10, 0)
+		if err != nil {
+			t.Fatalf("ListByAccountPaginated failed: %v", err)
+		}
+		if totalCount != 5 || len(allTxs) != 5 {
+			t.Errorf("expected 5 transactions, got %d (total: %d)", len(allTxs), totalCount)
+		}
+
+		// Filter by Food category and date range [yesterday, tomorrow)
+		foodTxs, foodCount, err := txRepo.ListByAccountPaginated(ctx, accA.ID, &foodCat.ID, &yesterday, &tomorrow, 10, 0)
+		if err != nil {
+			t.Fatalf("ListByAccountPaginated with date and category failed: %v", err)
+		}
+		if foodCount != 4 || len(foodTxs) != 4 { // 2 completed debit + 1 completed credit + 1 pending debit
+			t.Errorf("expected 4 food transactions, got %d (total: %d)", len(foodTxs), foodCount)
+		}
+
+		// Filter by future date (should return 0)
+		future := tomorrow.Add(24 * time.Hour)
+		futureTxs, futureCount, err := txRepo.ListByAccountPaginated(ctx, accA.ID, nil, &future, nil, 10, 0)
+		if err != nil {
+			t.Fatalf("ListByAccountPaginated with future date failed: %v", err)
+		}
+		if futureCount != 0 || len(futureTxs) != 0 {
+			t.Errorf("expected 0 transactions for future date, got %d (total: %d)", len(futureTxs), futureCount)
+		}
+	})
 }

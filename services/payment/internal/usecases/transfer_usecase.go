@@ -283,6 +283,8 @@ type TransactionDetail struct {
 type ListTransactionsInput struct {
 	AuthenticatedUserID string
 	CategoryID          *string
+	From                *time.Time
+	To                  *time.Time
 	Page                int
 	PageSize            int
 }
@@ -309,6 +311,10 @@ func (u *transferUsecase) ListMyTransactions(ctx context.Context, in ListTransac
 	}
 	offset := (in.Page - 1) * in.PageSize
 
+	if in.From != nil && in.To != nil && !in.To.After(*in.From) {
+		return nil, apperrors.ErrInvalidInput
+	}
+
 	var categoryID *uuid.UUID
 	if in.CategoryID != nil && strings.TrimSpace(*in.CategoryID) != "" {
 		cid, err := uuid.Parse(strings.TrimSpace(*in.CategoryID))
@@ -318,7 +324,7 @@ func (u *transferUsecase) ListMyTransactions(ctx context.Context, in ListTransac
 		categoryID = &cid
 	}
 
-	txs, total, err := u.transactions.ListByAccountPaginated(ctx, acc.ID, categoryID, int32(in.PageSize), int32(offset))
+	txs, total, err := u.transactions.ListByAccountPaginated(ctx, acc.ID, categoryID, in.From, in.To, int32(in.PageSize), int32(offset))
 	if err != nil {
 		return nil, err
 	}

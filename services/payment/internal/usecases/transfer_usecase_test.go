@@ -37,15 +37,19 @@ type mockTxRepo struct {
 	txs                 []*domain.Transaction
 	totalCount          int64
 	err                 error
-	capturedAccountID   uuid.UUID
+	capturedAccountID  uuid.UUID
 	capturedCategoryID *uuid.UUID
-	capturedLimit       int32
-	capturedOffset      int32
+	capturedFrom       *time.Time
+	capturedTo         *time.Time
+	capturedLimit      int32
+	capturedOffset     int32
 }
 
-func (m *mockTxRepo) ListByAccountPaginated(ctx context.Context, accountID uuid.UUID, categoryID *uuid.UUID, limit, offset int32) ([]*domain.Transaction, int64, error) {
+func (m *mockTxRepo) ListByAccountPaginated(ctx context.Context, accountID uuid.UUID, categoryID *uuid.UUID, from, to *time.Time, limit, offset int32) ([]*domain.Transaction, int64, error) {
 	m.capturedAccountID = accountID
 	m.capturedCategoryID = categoryID
+	m.capturedFrom = from
+	m.capturedTo = to
 	m.capturedLimit = limit
 	m.capturedOffset = offset
 
@@ -180,6 +184,70 @@ func TestListMyTransactions_WithCategoryFilter(t *testing.T) {
 		_, err := uc.ListMyTransactions(ctx, usecases.ListTransactionsInput{
 			AuthenticatedUserID: userID.String(),
 			CategoryID:          &invalidCat,
+			Page:                1,
+			PageSize:            10,
+		})
+		if err != apperrors.ErrInvalidInput {
+			t.Fatalf("expected ErrInvalidInput, got %v", err)
+		}
+	})
+
+	t.Run("success with date range filter", func(t *testing.T) {
+		fromDate := time.Date(2026, 9, 3, 0, 0, 0, 0, time.UTC)
+		toDate := time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)
+
+		_, err := uc.ListMyTransactions(ctx, usecases.ListTransactionsInput{
+			AuthenticatedUserID: userID.String(),
+			From:                &fromDate,
+			To:                  &toDate,
+			Page:                1,
+			PageSize:            10,
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if txRepo.capturedFrom == nil || !txRepo.capturedFrom.Equal(fromDate) {
+			t.Errorf("expected from %v, got %v", fromDate, txRepo.capturedFrom)
+		}
+		if txRepo.capturedTo == nil || !txRepo.capturedTo.Equal(toDate) {
+			t.Errorf("expected to %v, got %v", toDate, txRepo.capturedTo)
+		}
+	})
+
+	t.Run("success with combined category and date range filter", func(t *testing.T) {
+		fromDate := time.Date(2026, 9, 3, 0, 0, 0, 0, time.UTC)
+		toDate := time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)
+
+		_, err := uc.ListMyTransactions(ctx, usecases.ListTransactionsInput{
+			AuthenticatedUserID: userID.String(),
+			CategoryID:          &catIDStr,
+			From:                &fromDate,
+			To:                  &toDate,
+			Page:                1,
+			PageSize:            10,
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if txRepo.capturedCategoryID == nil || *txRepo.capturedCategoryID != catID {
+			t.Errorf("expected category ID %v, got %v", catID, txRepo.capturedCategoryID)
+		}
+		if txRepo.capturedFrom == nil || !txRepo.capturedFrom.Equal(fromDate) {
+			t.Errorf("expected from %v, got %v", fromDate, txRepo.capturedFrom)
+		}
+		if txRepo.capturedTo == nil || !txRepo.capturedTo.Equal(toDate) {
+			t.Errorf("expected to %v, got %v", toDate, txRepo.capturedTo)
+		}
+	})
+
+	t.Run("invalid date range when to is before or equal to from", func(t *testing.T) {
+		fromDate := time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)
+		toDate := time.Date(2026, 9, 3, 0, 0, 0, 0, time.UTC)
+
+		_, err := uc.ListMyTransactions(ctx, usecases.ListTransactionsInput{
+			AuthenticatedUserID: userID.String(),
+			From:                &fromDate,
+			To:                  &toDate,
 			Page:                1,
 			PageSize:            10,
 		})
