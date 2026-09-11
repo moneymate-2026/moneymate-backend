@@ -20,8 +20,10 @@ type Querier interface {
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (PaymentCategory, error)
 	CreateDeposit(ctx context.Context, arg CreateDepositParams) (PaymentDeposit, error)
 	CreateExternalSettlementAccount(ctx context.Context) (CreateExternalSettlementAccountRow, error)
+	CreatePod(ctx context.Context, arg CreatePodParams) (PaymentPod, error)
 	CreateWallet(ctx context.Context, arg CreateWalletParams) (CreateWalletRow, error)
 	DeleteCategory(ctx context.Context, arg DeleteCategoryParams) error
+	DeletePod(ctx context.Context, id uuid.UUID) error
 	GetAccountByHandle(ctx context.Context, handle *string) (GetAccountByHandleRow, error)
 	GetAccountByID(ctx context.Context, id uuid.UUID) (GetAccountByIDRow, error)
 	GetAccountByIDForUpdate(ctx context.Context, id uuid.UUID) (GetAccountByIDForUpdateRow, error)
@@ -29,6 +31,7 @@ type Querier interface {
 	GetDepositByOrderID(ctx context.Context, razorpayOrderID string) (PaymentDeposit, error)
 	GetEntriesByTransactionID(ctx context.Context, transactionID uuid.UUID) ([]GetEntriesByTransactionIDRow, error)
 	GetExternalSettlementAccount(ctx context.Context) (GetExternalSettlementAccountRow, error)
+	GetPodByID(ctx context.Context, id uuid.UUID) (PaymentPod, error)
 	GetSpendByCategory(ctx context.Context, arg GetSpendByCategoryParams) ([]GetSpendByCategoryRow, error)
 	GetSpendByPeriod(ctx context.Context, arg GetSpendByPeriodParams) ([]GetSpendByPeriodRow, error)
 	GetSystemAccountByType(ctx context.Context, type_ PaymentAccountType) (PaymentAccount, error)
@@ -42,6 +45,7 @@ type Querier interface {
 	ListCategoriesByUser(ctx context.Context, userID uuid.UUID) ([]PaymentCategory, error)
 	ListDeposits(ctx context.Context, arg ListDepositsParams) ([]PaymentDeposit, error)
 	ListEntriesByAccount(ctx context.Context, accountID uuid.UUID) ([]ListEntriesByAccountRow, error)
+	ListPodsByUser(ctx context.Context, userID uuid.UUID) ([]PaymentPod, error)
 	ListTransactionsByAccount(ctx context.Context, accountID uuid.UUID) ([]ListTransactionsByAccountRow, error)
 	ListTransactionsByAccountPaginated(ctx context.Context, arg ListTransactionsByAccountPaginatedParams) ([]PaymentTransaction, error)
 	ListWithdrawals(ctx context.Context, arg ListWithdrawalsParams) ([]PaymentTransaction, error)
@@ -49,6 +53,7 @@ type Querier interface {
 	MarkDepositPaid(ctx context.Context, arg MarkDepositPaidParams) error
 	MarkDepositPaidIfCreated(ctx context.Context, arg MarkDepositPaidIfCreatedParams) (int64, error)
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (PaymentCategory, error)
+	UpdatePod(ctx context.Context, arg UpdatePodParams) (PaymentPod, error)
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) error
 }
 

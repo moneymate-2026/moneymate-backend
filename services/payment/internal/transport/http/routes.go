@@ -8,7 +8,7 @@ import (
 	sharedjwt "github.com/moneymate-2026/moneymate-backend/shared/pkg/jwt"
 )
 
-func RegisterRoutes(router fiber.Router, wh *WalletHandler, th *TransferHandler, sth *SystemTransferHandler, dh *DepositHandler, wdh *WithdrawalHandler, ch *CategoryHandler, ah *AnalyticsHandler, jwtCfg sharedjwt.Config, authClient *authclient.Client, merchantClient *merchantclient.Client, internalSecret string) {
+func RegisterRoutes(router fiber.Router, wh *WalletHandler, th *TransferHandler, sth *SystemTransferHandler, dh *DepositHandler, wdh *WithdrawalHandler, ch *CategoryHandler, ah *AnalyticsHandler, ph *PodHandler, jwtCfg sharedjwt.Config, authClient *authclient.Client, merchantClient *merchantclient.Client, internalSecret string) {
 	pay := router.Group("/payment", RequireUserID(jwtCfg))
 
 	pay.Get("/wallets/me", RequireTransactionToken(authClient), wh.GetMyWallet)
@@ -34,6 +34,13 @@ func RegisterRoutes(router fiber.Router, wh *WalletHandler, th *TransferHandler,
 
 	pay.Post("/withdrawals", RequireTransactionToken(authClient), wdh.Request)
 	pay.Get("/withdrawals", wdh.List)
+
+	pay.Post("/pods", ph.Create)
+	pay.Get("/pods", ph.List)
+	pay.Get("/pods/:id", ph.GetByID)
+	pay.Patch("/pods/:id", ph.Update)
+	pay.Delete("/pods/:id", ph.Delete)
+	pay.Post("/pods/:id/transfer", ph.Transfer)
 
 	internal := router.Group("/internal", RequireInternalSecret(internalSecret))
 	internal.Post("/payment/wallets", wh.CreateWalletInternal)

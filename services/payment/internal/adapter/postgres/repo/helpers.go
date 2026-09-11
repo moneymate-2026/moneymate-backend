@@ -38,3 +38,18 @@ func pgtypeToUUIDPtr(u pgtype.UUID) *uuid.UUID {
 	id := uuid.UUID(u.Bytes)
 	return &id
 }
+
+func datePtrToPgtype(t *time.Time) pgtype.Date {
+	if t == nil {
+		return pgtype.Date{}
+	}
+	return pgtype.Date{Time: *t, Valid: true}
+}
+
+func pgtypeDateToTimePtr(d pgtype.Date) *time.Time {
+	if !d.Valid {
+		return nil
+	}
+	return &d.Time
+}
+

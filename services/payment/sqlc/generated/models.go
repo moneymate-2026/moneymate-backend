@@ -230,6 +230,19 @@ type PaymentJournalEntry struct {
 	CreatedAt     time.Time
 }
 
+type PaymentPod struct {
+	ID           uuid.UUID
+	AccountID    uuid.UUID
+	UserID       uuid.UUID
+	Name         string
+	TargetAmount *int64
+	TargetDate   pgtype.Date
+	Icon         *string
+	Status       string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
 type PaymentTransaction struct {
 	ID             uuid.UUID
 	FromAccountID  uuid.UUID

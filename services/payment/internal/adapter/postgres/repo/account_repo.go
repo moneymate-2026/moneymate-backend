@@ -12,6 +12,7 @@ import (
 	"github.com/moneymate-2026/moneymate-backend/services/payment/internal/domain"
 	"github.com/moneymate-2026/moneymate-backend/services/payment/sqlc/generated"
 	apperrors "github.com/moneymate-2026/moneymate-backend/shared/pkg/errors"
+	"github.com/moneymate-2026/moneymate-backend/shared/pkg/pgxtx"
 )
 
 type AccountRepo struct {
@@ -23,8 +24,15 @@ func NewAccountRepo(pool *pgxpool.Pool) *AccountRepo {
 	return &AccountRepo{pool: pool, q: generated.New(pool)}
 }
 
+func (r *AccountRepo) queries(ctx context.Context) *generated.Queries {
+	if tx, ok := pgxtx.FromContext(ctx); ok {
+		return r.q.WithTx(tx)
+	}
+	return r.q
+}
+
 func (r *AccountRepo) Create(ctx context.Context, a *domain.Account) (*domain.Account, error) {
-	row, err := r.q.CreateAccount(ctx, generated.CreateAccountParams{
+	row, err := r.queries(ctx).CreateAccount(ctx, generated.CreateAccountParams{
 		UserID:     uuidPtrToPgtype(a.UserID),
 		MerchantID: uuidPtrToPgtype(a.MerchantID),
 		Column3:    generated.PaymentAccountType(a.Type),
@@ -37,7 +45,7 @@ func (r *AccountRepo) Create(ctx context.Context, a *domain.Account) (*domain.Ac
 }
 
 func (r *AccountRepo) CreateWallet(ctx context.Context, a *domain.Account) (*domain.Account, error) {
-	row, err := r.q.CreateWallet(ctx, generated.CreateWalletParams{
+	row, err := r.queries(ctx).CreateWallet(ctx, generated.CreateWalletParams{
 		UserID:   uuidPtrToPgtype(a.UserID),
 		Currency: a.Currency,
 		Handle:   a.Handle,
@@ -49,7 +57,7 @@ func (r *AccountRepo) CreateWallet(ctx context.Context, a *domain.Account) (*dom
 }
 
 func (r *AccountRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Account, error) {
-	row, err := r.q.GetAccountByID(ctx, id)
+	row, err := r.queries(ctx).GetAccountByID(ctx, id)
 	if err != nil {
 		return nil, mapDBErr(err)
 	}
@@ -57,7 +65,7 @@ func (r *AccountRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Accoun
 }
 
 func (r *AccountRepo) GetByHandle(ctx context.Context, handle string) (*domain.Account, error) {
-	row, err := r.q.GetAccountByHandle(ctx, &handle)
+	row, err := r.queries(ctx).GetAccountByHandle(ctx, &handle)
 	if err != nil {
 		return nil, mapDBErr(err)
 	}
@@ -65,7 +73,7 @@ func (r *AccountRepo) GetByHandle(ctx context.Context, handle string) (*domain.A
 }
 
 func (r *AccountRepo) GetWalletByUserID(ctx context.Context, userID uuid.UUID) (*domain.Account, error) {
-	row, err := r.q.GetWalletByUserID(ctx, pgtype.UUID{Bytes: userID, Valid: true})
+	row, err := r.queries(ctx).GetWalletByUserID(ctx, pgtype.UUID{Bytes: userID, Valid: true})
 	if err != nil {
 		return nil, mapDBErr(err)
 	}
@@ -73,7 +81,7 @@ func (r *AccountRepo) GetWalletByUserID(ctx context.Context, userID uuid.UUID) (
 }
 
 func (r *AccountRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]*domain.Account, error) {
-	rows, err := r.q.ListAccountsByUser(ctx, pgtype.UUID{Bytes: userID, Valid: true})
+	rows, err := r.queries(ctx).ListAccountsByUser(ctx, pgtype.UUID{Bytes: userID, Valid: true})
 	if err != nil {
 		return nil, mapDBErr(err)
 	}
@@ -85,7 +93,7 @@ func (r *AccountRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]*doma
 }
 
 func (r *AccountRepo) GetTotalBalanceByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
-	total, err := r.q.GetTotalBalanceByUser(ctx, pgtype.UUID{Bytes: userID, Valid: true})
+	total, err := r.queries(ctx).GetTotalBalanceByUser(ctx, pgtype.UUID{Bytes: userID, Valid: true})
 	if err != nil {
 		return 0, mapDBErr(err)
 	}
@@ -93,7 +101,7 @@ func (r *AccountRepo) GetTotalBalanceByUser(ctx context.Context, userID uuid.UUI
 }
 
 func (r *AccountRepo) AddBalance(ctx context.Context, id uuid.UUID, amount int64) error {
-	return mapDBErr(r.q.AddBalance(ctx, generated.AddBalanceParams{ID: id, Balance: amount}))
+	return mapDBErr(r.queries(ctx).AddBalance(ctx, generated.AddBalanceParams{ID: id, Balance: amount}))
 }
 
 func rowToAccount(row generated.GetAccountByIDRow) *domain.Account {
@@ -121,7 +129,7 @@ func rowToAccount(row generated.GetAccountByIDRow) *domain.Account {
 }
 
 func (r *AccountRepo) GetExternalSettlementAccount(ctx context.Context) (*domain.Account, error) {
-	row, err := r.q.GetExternalSettlementAccount(ctx)
+	row, err := r.queries(ctx).GetExternalSettlementAccount(ctx)
 	if err != nil {
 		return nil, mapDBErr(err)
 	}
@@ -129,7 +137,7 @@ func (r *AccountRepo) GetExternalSettlementAccount(ctx context.Context) (*domain
 }
 
 func (r *AccountRepo) CreateExternalSettlementAccount(ctx context.Context) (*domain.Account, error) {
-	row, err := r.q.CreateExternalSettlementAccount(ctx)
+	row, err := r.queries(ctx).CreateExternalSettlementAccount(ctx)
 	if err != nil {
 		return nil, mapDBErr(err)
 	}
@@ -151,7 +159,7 @@ func mapDBErr(err error) error {
 }
 
 func (r *AccountRepo) GetSystemAccountByType(ctx context.Context, accountType domain.AccountType) (*domain.Account, error) {
-	row, err := r.q.GetSystemAccountByType(ctx, generated.PaymentAccountType(accountType))
+	row, err := r.queries(ctx).GetSystemAccountByType(ctx, generated.PaymentAccountType(accountType))
 	if err != nil {
 		return nil, mapDBErr(err)
 	}

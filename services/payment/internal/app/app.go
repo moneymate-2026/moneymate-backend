@@ -22,6 +22,7 @@ import (
 	sharedjwt "github.com/moneymate-2026/moneymate-backend/shared/pkg/jwt"
 	"github.com/moneymate-2026/moneymate-backend/shared/pkg/kafka"
 	"github.com/moneymate-2026/moneymate-backend/shared/pkg/payment"
+	"github.com/moneymate-2026/moneymate-backend/shared/pkg/pgxtx"
 )
 
 type App struct {
@@ -58,6 +59,8 @@ func Build(cfg *config.Config) (*App, error) {
 	ledgerRepo := repo.NewLedgerRepo(pool)
 	depositRepo := repo.NewDepositRepo(pool)
 	categoryRepo := repo.NewCategoryRepo(pool)
+	podRepo := repo.NewPodRepo(pool)
+	txManager := pgxtx.New(pool)
 
 	externalSettlementID, err := seedExternalSettlementAccount(ctx, accountRepo)
 	if err != nil {
@@ -76,6 +79,7 @@ func Build(cfg *config.Config) (*App, error) {
 	categoryUC:= usecases.NewCategoryUsecase(categoryRepo)
 	systemTransferUC := usecases.NewSystemTransferUsecase(ledgerRepo)
 	analyticsUC := usecases.NewAnalyticsUsecase(accountRepo, transactionRepo)
+	podUC := usecases.NewPodUsecase(accountRepo, podRepo, txManager, ledgerRepo)
 	
 	walletHandler := transporthttp.NewWalletHandler(walletUC)
 	transferHandler := transporthttp.NewTransferHandler(transferUC)
@@ -84,6 +88,7 @@ func Build(cfg *config.Config) (*App, error) {
 	cateGoryhandler:=transporthttp.NewCategoryHandler(categoryUC)
 	systemTransferHandler := transporthttp.NewSystemTransferHandler(systemTransferUC)
 	analyticsHandler := transporthttp.NewAnalyticsHandler(analyticsUC)
+	podHandler := transporthttp.NewPodHandler(podUC)
 
 	jwtCfg := sharedjwt.Config{
 		AccessSecret:     cfg.JWT.AccessSecret,
@@ -92,7 +97,7 @@ func Build(cfg *config.Config) (*App, error) {
 		RefreshExpiryHrs: cfg.JWT.RefreshExpiryHours,
 	}
 
-	server := setupHTTPServer(walletHandler, transferHandler, systemTransferHandler, depositHandler, withdrawalHandler, cateGoryhandler, analyticsHandler, jwtCfg, authClient, merchantClient, cfg.InternalServiceSecret)
+	server := setupHTTPServer(walletHandler, transferHandler, systemTransferHandler, depositHandler, withdrawalHandler, cateGoryhandler, analyticsHandler, podHandler, jwtCfg, authClient, merchantClient, cfg.InternalServiceSecret)
 
 	kafkaConsumer, err := kafka.NewConsumer(kafka.ConsumerConfig{
 		Brokers:  cfg.Kafka.Brokers,
@@ -126,7 +131,7 @@ func Build(cfg *config.Config) (*App, error) {
 	}, nil
 }
 
-func setupHTTPServer(wh *transporthttp.WalletHandler, th *transporthttp.TransferHandler, sth *transporthttp.SystemTransferHandler, dh *transporthttp.DepositHandler, wdh *transporthttp.WithdrawalHandler, ch *transporthttp.CategoryHandler, ah *transporthttp.AnalyticsHandler, jwtCfg sharedjwt.Config, authClient *authclient.Client, merchantClient *merchantclient.Client, internalSecret string) *fiber.App {
+func setupHTTPServer(wh *transporthttp.WalletHandler, th *transporthttp.TransferHandler, sth *transporthttp.SystemTransferHandler, dh *transporthttp.DepositHandler, wdh *transporthttp.WithdrawalHandler, ch *transporthttp.CategoryHandler, ah *transporthttp.AnalyticsHandler, ph *transporthttp.PodHandler, jwtCfg sharedjwt.Config, authClient *authclient.Client, merchantClient *merchantclient.Client, internalSecret string) *fiber.App {
 	server := fiber.New(fiber.Config{AppName: "payment-service"})
 	server.Use(recover.New())
 	server.Use(cors.New(cors.Config{
@@ -139,7 +144,7 @@ func setupHTTPServer(wh *transporthttp.WalletHandler, th *transporthttp.Transfer
 		return c.JSON(fiber.Map{"status": "ok", "service": "payment"})
 	})
 
-	transporthttp.RegisterRoutes(server, wh, th, sth, dh, wdh, ch, ah, jwtCfg, authClient, merchantClient, internalSecret)
+	transporthttp.RegisterRoutes(server, wh, th, sth, dh, wdh, ch, ah, ph, jwtCfg, authClient, merchantClient, internalSecret)
 	return server
 }
 

@@ -32,4 +32,11 @@ func registerPaymentRoutes(api fiber.Router, authMiddleware fiber.Handler, regis
 
 	payment.Post("/withdrawals", proxy.HTTPProxy(registry, "payment", "/payment/withdrawals"))
 	payment.Get("/withdrawals", proxy.HTTPProxy(registry, "payment", "/payment/withdrawals"))
+
+	payment.Post("/pods", proxy.HTTPProxy(registry, "payment", "/payment/pods"))
+	payment.Get("/pods", proxy.HTTPProxy(registry, "payment", "/payment/pods"))
+	payment.Get("/pods/:id", proxy.HTTPProxy(registry, "payment", "/payment/pods/:id"))
+	payment.Patch("/pods/:id", proxy.HTTPProxy(registry, "payment", "/payment/pods/:id"))
+	payment.Delete("/pods/:id", proxy.HTTPProxy(registry, "payment", "/payment/pods/:id"))
+	payment.Post("/pods/:id/transfer", proxy.HTTPProxy(registry, "payment", "/payment/pods/:id/transfer"))
 }

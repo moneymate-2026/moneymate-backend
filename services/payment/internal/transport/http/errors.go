@@ -15,6 +15,8 @@ func handleError(c fiber.Ctx, err error) error {
 		return response.NotFound(c, "not found")
 	case errors.Is(err, apperrors.ErrInsufficientFunds):
 		return response.Conflict(c, "insufficient funds")
+	case errors.Is(err, apperrors.ErrPodNonZeroBalance):
+		return response.Conflict(c, "cannot delete pod with non-zero balance; withdraw all funds first")
 	case errors.Is(err, apperrors.ErrIdempotencyKeyUsed):
 		return response.Conflict(c, "this transaction has already been processed")
 	case errors.Is(err, apperrors.ErrInvalidInput):

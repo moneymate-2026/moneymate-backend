@@ -40,6 +40,7 @@ var (
 	ErrTransactionLocked  = errors.New("transaction is currently locked or processing")
 	ErrDailyLimitReached  = errors.New("daily transaction limit reached")
 	ErrIdempotencyKeyUsed = errors.New("this transaction has already been processed")
+	ErrPodNonZeroBalance  = errors.New("cannot delete pod with non-zero balance; withdraw all funds first")
 )
 
 //jwt token errors
@@ -155,6 +156,9 @@ func ParseError(err error) *AppError {
 
 	case errors.Is(err, ErrInsufficientFunds):
 		return NewAppError(http.StatusPaymentRequired, "INSUFFICIENT_FUNDS", "Your wallet balance is too low for this transaction.", err)
+
+	case errors.Is(err, ErrPodNonZeroBalance):
+		return NewAppError(http.StatusConflict, "POD_NON_ZERO_BALANCE", "Cannot delete pod with non-zero balance. Please withdraw all funds first.", err)
 
 	case errors.Is(err, ErrTransactionLocked):
 		return NewAppError(http.StatusConflict, "TRANSACTION_LOCKED", "This account is currently processing another transaction. Please try again in a few seconds.", err)
