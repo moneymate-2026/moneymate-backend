@@ -27,11 +27,15 @@ var (
 	ErrEmailAlreadyTaken = errors.New("email already taken")
 	ErrPhoneAlreadyTaken = errors.New("phone number already taken")
 	ErrInvalidPassword   = errors.New("invalid password")
+	ErrIncorrectPassword = errors.New("incorrect current password")
+	ErrSamePassword      = errors.New("new password cannot be the same as old password")
+	ErrPasswordMismatch  = errors.New("confirm password does not match new password")
 	ErrOTPExpired        = errors.New("otp expired")
 	ErrOTPInvalid        = errors.New("otp invalid")
 	ErrOTPTimout         = errors.New("otp max tries reached")
+	ErrOTPTimeout        = ErrOTPTimout
 	ErrOAuthFailure      = errors.New("oauth authentication failed")
-	ErrEmailNotVerified = errors.New("email not verified")
+	ErrEmailNotVerified  = errors.New("email not verified")
 )
 
 // Financial & Transaction Specific
@@ -58,11 +62,11 @@ var (
 
 // AppError represents a structured HTTP error safely returned to the frontend.
 type AppError struct {
-	StatusCode int    `json:"-"`      
-	Code       string `json:"code"`    
-	Message    string `json:"message"` 
-	Details    interface{} `json:"details,omitempty"`
-	Err        error  `json:"-"`      
+	StatusCode int                    `json:"status_code"`
+	Code       string                 `json:"code"`
+	Message    string                 `json:"message"`
+	Details    map[string]interface{} `json:"details,omitempty"`
+	Err        error                  `json:"-"`
 }
 
 
@@ -79,32 +83,33 @@ func (e *AppError) Unwrap() error {
 	return e.Err
 }
 
-// NewAppError is a helper for creating structured HTTP errors.
-func NewAppError(statusCode int, code, message string, err error) *AppError {
+// NewAppError is a convenience constructor for standard errors with no extra metadata.
+func NewAppError(statusCode int, code, message string, underlying error) *AppError {
 	return &AppError{
 		StatusCode: statusCode,
 		Code:       code,
 		Message:    message,
-		Err:        err,
+		Err:        underlying,
 	}
 }
-func NewAppErrorWithDetails(statusCode int, code, message string, details interface{}, err error) *AppError {
-    return &AppError{
-        StatusCode: statusCode,
-        Code:       code,
-        Message:    message,
-        Details:    details,
-		Err: err,
-    }
+
+// NewAppErrorWithDetails allows attaching contextual metadata to the error response.
+func NewAppErrorWithDetails(statusCode int, code, message string, details map[string]interface{}, underlying error) *AppError {
+	return &AppError{
+		StatusCode: statusCode,
+		Code:       code,
+		Message:    message,
+		Details:    details,
+		Err:        underlying,
+	}
 }
 
-// MapDBErrors translates raw Postgres errors into domain sentinel errors.
+// MapDBErrors translates raw PostgreSQL / pgx driver errors into strongly typed domain errors.
 func MapDBErrors(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	// Strictly using pgx/v5 NoRows
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	}
@@ -114,19 +119,17 @@ func MapDBErrors(err error) error {
 		switch pgErr.Code {
 		case "23505": // unique_violation
 			switch pgErr.ConstraintName {
-			case "users_email_key":
+			case "users_email_key", "users_email_idx":
 				return ErrEmailAlreadyTaken
-			case "users_phone_number_key":
+			case "users_phone_key", "users_phone_idx":
 				return ErrPhoneAlreadyTaken
-			case "transactions_idempotency_key":
-				return ErrIdempotencyKeyUsed
 			default:
 				return ErrAlreadyExists
 			}
-		case "23503":
-			return fmt.Errorf("%w: %s", ErrInvalidInput, pgErr.Detail)
+		case "23503": // foreign_key_violation
+			return ErrNotFound
 		case "23514": // check_violation
-			if pgErr.ConstraintName == "wallets_balance_check" {
+			if pgErr.ConstraintName == "chk_positive_balance" {
 				return ErrInsufficientFunds
 			}
 			return ErrInvalidInput
@@ -148,8 +151,29 @@ func ParseError(err error) *AppError {
 	case errors.Is(err, ErrNotFound), errors.Is(err, ErrUserNotFound):
 		return NewAppError(http.StatusNotFound, "NOT_FOUND", "The requested resource was not found.", err)
 
+	case errors.Is(err, ErrIncorrectPassword):
+		return NewAppError(http.StatusUnauthorized, "INCORRECT_PASSWORD", "The current password you entered is incorrect.", err)
+
+	case errors.Is(err, ErrSamePassword):
+		return NewAppError(http.StatusBadRequest, "SAME_PASSWORD", "New password cannot be identical to your old password.", err)
+
+	case errors.Is(err, ErrPasswordMismatch):
+		return NewAppError(http.StatusBadRequest, "PASSWORD_MISMATCH", "Confirm password does not match new password.", err)
+
 	case errors.Is(err, ErrInvalidPassword):
 		return NewAppError(http.StatusUnauthorized, "UNAUTHORIZED", "Invalid email or password.", err)
+
+	case errors.Is(err, ErrInvalidInput), errors.Is(err, ErrBadRequest):
+		return NewAppError(http.StatusBadRequest, "BAD_REQUEST", "Invalid request parameters.", err)
+
+	case errors.Is(err, ErrOTPExpired):
+		return NewAppError(http.StatusBadRequest, "OTP_EXPIRED", "The verification code has expired.", err)
+
+	case errors.Is(err, ErrOTPInvalid):
+		return NewAppError(http.StatusBadRequest, "OTP_INVALID", "The code you entered is incorrect.", err)
+
+	case errors.Is(err, ErrOTPTimout):
+		return NewAppError(http.StatusTooManyRequests, "OTP_MAX_TRIES", "Maximum verification attempts exceeded.", err)
 
 	case errors.Is(err, ErrEmailAlreadyTaken):
 		return NewAppError(http.StatusConflict, "EMAIL_TAKEN", "This email is already in use.", err)
@@ -166,7 +190,7 @@ func ParseError(err error) *AppError {
 	case errors.Is(err, ErrUnauthorized):
 		return NewAppError(http.StatusUnauthorized, "UNAUTHORIZED", "Please log in to continue.", err)
 	case errors.Is(err, ErrEmailNotVerified):
-    return NewAppError(http.StatusForbidden, "EMAIL_NOT_VERIFIED", "Please verify your email before completing registration.", err)
+		return NewAppError(http.StatusForbidden, "EMAIL_NOT_VERIFIED", "Please verify your email before completing registration.", err)
 
 	case errors.Is(err, ErrPinLocked):
 		return NewAppError(http.StatusTooManyRequests, "PIN_LOCKED", "Too many failed attempts. Try again in 15 minutes.", err)

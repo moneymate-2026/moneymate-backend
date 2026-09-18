@@ -88,6 +88,32 @@ type RefreshTokenRequest struct {
     RefreshToken string
 }
 
+// ── Password Management ────────────────────────────────────────
+
+type ChangePasswordRequest struct {
+	OldPassword     string
+	NewPassword     string
+	ConfirmPassword string
+}
+
+type ForgotPasswordRequest struct {
+	Email string
+}
+
+type ForgotPasswordResponse struct {
+	Email             string `json:"email"`
+	ExpiresIn         int    `json:"expires_in"`
+	ResendCooldownIn  int    `json:"resend_cooldown_in"`
+	MaxVerifyAttempts int    `json:"max_verify_attempts"`
+}
+
+type ResetPasswordRequest struct {
+	Email           string
+	Code            string
+	NewPassword     string
+	ConfirmPassword string
+}
+
 
 //admin
 type CreateUserRequest struct {

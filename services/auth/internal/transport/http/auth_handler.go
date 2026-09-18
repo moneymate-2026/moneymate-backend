@@ -187,6 +187,76 @@ func (h *AuthHandler) VerifyRegistrationOTP(c fiber.Ctx) error {
 	return response.OK(c, "email verified", resp)
 }
 
+func (h *AuthHandler) ChangePassword(c fiber.Ctx) error {
+	userIDStr, ok := c.Locals("user_id").(string)
+	if !ok || userIDStr == "" {
+		return response.Unauthorized(c, "authentication required")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return response.Unauthorized(c, "invalid user session")
+	}
+
+	var req changePasswordRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.BadRequest(c, nil, "invalid request body")
+	}
+	if err := validate.Struct(req); err != nil {
+		return response.BadRequest(c, formatValidationErrors(err), "validation failed")
+	}
+
+	ucReq := usecase.ChangePasswordRequest{
+		OldPassword:     req.OldPassword,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+
+	if err := h.authUsecase.ChangePassword(c.Context(), userID, ucReq); err != nil {
+		return handleError(c, err)
+	}
+	return response.OK(c, "password changed successfully", nil)
+}
+
+func (h *AuthHandler) ForgotPassword(c fiber.Ctx) error {
+	var req forgotPasswordRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.BadRequest(c, nil, "invalid request body")
+	}
+	if err := validate.Struct(req); err != nil {
+		return response.BadRequest(c, formatValidationErrors(err), "validation failed")
+	}
+
+	resp, err := h.otpUsecase.ForgotPassword(c.Context(), usecase.ForgotPasswordRequest{
+		Email: req.Email,
+	})
+	if err != nil {
+		return handleError(c, err)
+	}
+	return response.OK(c, "if your email is registered, a password reset code has been sent", resp)
+}
+
+func (h *AuthHandler) ResetPassword(c fiber.Ctx) error {
+	var req resetPasswordRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.BadRequest(c, nil, "invalid request body")
+	}
+	if err := validate.Struct(req); err != nil {
+		return response.BadRequest(c, formatValidationErrors(err), "validation failed")
+	}
+
+	ucReq := usecase.ResetPasswordRequest{
+		Email:           req.Email,
+		Code:            req.Code,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+
+	if err := h.authUsecase.ResetPassword(c.Context(), ucReq); err != nil {
+		return handleError(c, err)
+	}
+	return response.OK(c, "password reset successfully", nil)
+}
+
 func (h *AuthHandler) VerifyAccessToken(c fiber.Ctx) error {
 	var req struct {
 		Token string `json:"token"`

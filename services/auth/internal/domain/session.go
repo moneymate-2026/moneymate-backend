@@ -19,4 +19,11 @@ type Store interface {
 	
 	MarkEmailVerified(ctx context.Context, email string, ttl time.Duration) error
 	ConsumeEmailVerified(ctx context.Context, email string) (verified bool, err error)
+
+	SetPasswordResetOTP(ctx context.Context, email, otpHash string, ttl time.Duration) error
+	GetPasswordResetOTP(ctx context.Context, email string) (otpHash string, found bool, err error)
+	DeletePasswordResetOTP(ctx context.Context, email string) error
+	IncrementPasswordResetOTPAttempts(ctx context.Context, email string, ttl time.Duration) (int64, error)
+	TrySetPasswordResetResendCooldown(ctx context.Context, email string, ttl time.Duration) (bool, time.Duration, error)
+	ResetPasswordResetOTPAttempts(ctx context.Context, email string) error
 }

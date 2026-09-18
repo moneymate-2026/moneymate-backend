@@ -39,6 +39,9 @@ func registerAuthRoutes(router fiber.Router, h *AuthHandler, internalSecret stri
 	auth.Post("/logout", RequireUserID, h.Logout)
 	auth.Post("/otp/send", h.SendRegistrationOTP)
 	auth.Post("/otp/verify", h.VerifyRegistrationOTP)
+	auth.Post("/password/change", RequireUserID, h.ChangePassword)
+	auth.Post("/password/forgot", h.ForgotPassword)
+	auth.Post("/password/reset", h.ResetPassword)
 	auth.Post("/user/register", h.Register(domain.AccountTypeUser))
 	auth.Post("/merchant/register", h.Register(domain.AccountTypeMerchant))
 
