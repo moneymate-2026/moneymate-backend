@@ -25,6 +25,8 @@ type AuthUsecase interface {
 	Logout(ctx context.Context, req LogoutRequest) error
 	RefreshToken(ctx context.Context, req RefreshTokenRequest) (*RefreshTokenResponse, error)
 	AdminLogin(ctx context.Context, req AdminLoginRequest) (*LoginResponse, error)
+	ChangePassword(ctx context.Context, userID uuid.UUID, req ChangePasswordRequest) error
+	ResetPassword(ctx context.Context, req ResetPasswordRequest) error
 }
 
 // ── DI interfaces ────────────────────────────────────────────────
@@ -605,4 +607,142 @@ func (u *authUsecase) issueAndPersistTokens(ctx context.Context, user *domain.Us
 		return "", "", time.Time{}, time.Time{}, fmt.Errorf("persist refresh token: %w", err)
 	}
 	return accessToken, refreshToken, accessExp, refreshExp, nil
+}
+
+// ── Password Management ──────────────────────────────────────────
+
+func (u *authUsecase) ChangePassword(ctx context.Context, userID uuid.UUID, req ChangePasswordRequest) error {
+	if req.OldPassword == "" || req.NewPassword == "" || req.ConfirmPassword == "" {
+		return apperrors.ErrInvalidInput
+	}
+	if req.NewPassword != req.ConfirmPassword {
+		return apperrors.ErrPasswordMismatch
+	}
+	if req.NewPassword == req.OldPassword {
+		return apperrors.ErrSamePassword
+	}
+	if err := validatePassword(req.NewPassword); err != nil {
+		return err
+	}
+
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("get user: %w", err)
+	}
+	if user == nil || user.PasswordHash == nil {
+		return apperrors.ErrIncorrectPassword
+	}
+
+	ok, err := u.hasher.Verify(*user.PasswordHash, req.OldPassword)
+	if err != nil {
+		return fmt.Errorf("verify old password: %w", err)
+	}
+	if !ok {
+		return apperrors.ErrIncorrectPassword
+	}
+
+	newHash, err := u.hasher.Hash(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("hash new password: %w", err)
+	}
+
+	if err := u.userRepo.UpdatePassword(ctx, userID, newHash); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	// Revoke all existing refresh tokens so other devices cannot renew sessions,
+	// while leaving the current device's active access token valid until normal expiry.
+	if err := u.refreshTokenRepo.RevokeAllForUser(ctx, userID); err != nil {
+		return fmt.Errorf("revoke all refresh tokens: %w", err)
+	}
+
+	return nil
+}
+
+func (u *authUsecase) ResetPassword(ctx context.Context, req ResetPasswordRequest) error {
+	email := normalizeEmail(req.Email)
+	code := strings.TrimSpace(req.Code)
+
+	if email == "" || code == "" || req.NewPassword == "" || req.ConfirmPassword == "" {
+		return apperrors.ErrInvalidInput
+	}
+	if req.NewPassword != req.ConfirmPassword {
+		return apperrors.ErrPasswordMismatch
+	}
+	if err := validatePassword(req.NewPassword); err != nil {
+		return err
+	}
+
+	// 1. Verify OTP with attempts limit (same pattern as VerifyRegistrationOTP)
+	attempts, err := u.store.IncrementPasswordResetOTPAttempts(ctx, email, 15*time.Minute)
+	if err != nil {
+		return fmt.Errorf("increment password reset otp attempts: %w", err)
+	}
+	if attempts > 5 {
+		_ = u.store.DeletePasswordResetOTP(ctx, email)
+		return apperrors.ErrOTPTimout
+	}
+
+	storedHash, found, err := u.store.GetPasswordResetOTP(ctx, email)
+	if err != nil {
+		return fmt.Errorf("get password reset otp: %w", err)
+	}
+	if !found {
+		return apperrors.ErrOTPExpired
+	}
+
+	suppliedHash := hashOTP(code)
+	if !constantTimeEqual(storedHash, suppliedHash) {
+		attemptsLeft := 5 - attempts
+		if attemptsLeft < 0 {
+			attemptsLeft = 0
+		}
+		details := map[string]interface{}{
+			"attempts_left": int(attemptsLeft),
+			"max_attempts":  5,
+		}
+		return apperrors.NewAppErrorWithDetails(
+			400,
+			"OTP_INVALID",
+			"The code you entered is incorrect.",
+			details,
+			nil,
+		)
+	}
+
+	// 2. Fetch user
+	user, err := u.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("get user by email: %w", err)
+	}
+
+	// 3. Hash new password & update
+	newHash, err := u.hasher.Hash(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("hash new password: %w", err)
+	}
+
+	if err := u.userRepo.UpdatePassword(ctx, user.ID, newHash); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	// 4. Invalidate all existing sessions (IncrementTokenVersion + store.UpgradeTokenVersion + RevokeAllForUser)
+	_, _, err = parallelrunners.Query2(ctx,
+		func(ctx context.Context) (int64, error) { return u.userRepo.IncrementTokenVersion(ctx, user.ID) },
+		func(ctx context.Context) (struct{}, error) {
+			return struct{}{}, u.store.UpgradeTokenVersion(ctx, user.ID.String())
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("revoke all sessions (access): %w", err)
+	}
+	if err := u.refreshTokenRepo.RevokeAllForUser(ctx, user.ID); err != nil {
+		return fmt.Errorf("revoke all refresh tokens: %w", err)
+	}
+
+	// 5. Clean up OTP
+	_ = u.store.DeletePasswordResetOTP(ctx, email)
+	_ = u.store.ResetPasswordResetOTPAttempts(ctx, email)
+
+	return nil
 }

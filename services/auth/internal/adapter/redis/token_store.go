@@ -151,6 +151,74 @@ func (r *redisStore) ResetOTPAttempts(ctx context.Context, email string) error {
     return nil
 }
 
+// ── Password Reset OTP ─────────────────────────────────────────
+
+func (r *redisStore) SetPasswordResetOTP(ctx context.Context, email, otpHash string, ttl time.Duration) error {
+    key := passwordResetOTPKey(email)
+    if err := r.client.Set(ctx, key, otpHash, ttl).Err(); err != nil {
+        return fmt.Errorf("redis set password reset otp: %w", err)
+    }
+    return nil
+}
+
+func (r *redisStore) GetPasswordResetOTP(ctx context.Context, email string) (string, bool, error) {
+    key := passwordResetOTPKey(email)
+    hash, err := r.client.Get(ctx, key).Result()
+    if err == redis.Nil {
+        return "", false, nil
+    }
+    if err != nil {
+        return "", false, fmt.Errorf("redis get password reset otp: %w", err)
+    }
+    return hash, true, nil
+}
+
+func (r *redisStore) DeletePasswordResetOTP(ctx context.Context, email string) error {
+    key := passwordResetOTPKey(email)
+    if err := r.client.Del(ctx, key).Err(); err != nil {
+        return fmt.Errorf("redis delete password reset otp: %w", err)
+    }
+    return nil
+}
+
+func (r *redisStore) IncrementPasswordResetOTPAttempts(ctx context.Context, email string, ttl time.Duration) (int64, error) {
+    key := passwordResetOTPAttemptsKey(email)
+    count, err := r.client.Incr(ctx, key).Result()
+    if err != nil {
+        return 0, fmt.Errorf("redis increment password reset otp attempts: %w", err)
+    }
+    if count == 1 {
+        if err := r.client.Expire(ctx, key, ttl).Err(); err != nil {
+            return count, fmt.Errorf("redis set password reset otp attempts ttl: %w", err)
+        }
+    }
+    return count, nil
+}
+
+func (r *redisStore) TrySetPasswordResetResendCooldown(ctx context.Context, email string, ttl time.Duration) (bool, time.Duration, error) {
+    key := passwordResetOTPCooldownKey(email)
+    ok, err := r.client.SetNX(ctx, key, "1", ttl).Result()
+    if err != nil {
+        return false, 0, fmt.Errorf("redis set password reset cooldown: %w", err)
+    }
+    if ok {
+        return true, ttl, nil
+    }
+    remainingTTL, err := r.client.TTL(ctx, key).Result()
+    if err != nil {
+        return false, 0, fmt.Errorf("redis get password reset cooldown ttl: %w", err)
+    }
+    return false, remainingTTL, nil
+}
+
+func (r *redisStore) ResetPasswordResetOTPAttempts(ctx context.Context, email string) error {
+    key := passwordResetOTPAttemptsKey(email)
+    if err := r.client.Del(ctx, key).Err(); err != nil {
+        return fmt.Errorf("redis delete password reset otp attempts: %w", err)
+    }
+    return nil
+}
+
 // ── Key helpers ────────────────────────────────────────────────
 
 func otpKey(email string) string {
@@ -163,4 +231,16 @@ func otpAttemptsKey(email string) string {
 
 func otpCooldownKey(email string) string {
     return fmt.Sprintf("auth:otp:register:%s:cooldown", email)
+}
+
+func passwordResetOTPKey(email string) string {
+    return fmt.Sprintf("auth:otp:password_reset:%s", email)
+}
+
+func passwordResetOTPAttemptsKey(email string) string {
+    return fmt.Sprintf("auth:otp:password_reset:%s:attempts", email)
+}
+
+func passwordResetOTPCooldownKey(email string) string {
+    return fmt.Sprintf("auth:otp:password_reset:%s:cooldown", email)
 }

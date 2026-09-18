@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -17,11 +17,13 @@ import (
 
 type EmailSender interface {
 	SendOTP(ctx context.Context, toEmail, otp string) error
+	SendPasswordResetOTP(ctx context.Context, toEmail, otp string) error
 }
 
 type OTPUsecase interface {
 	SendRegistrationOTP(ctx context.Context, req SendRegistrationOTPRequest) (*SendRegistrationOTPResponse, error)
 	VerifyRegistrationOTP(ctx context.Context, req VerifyRegistrationOTPRequest) (*VerifyRegistrationOTPResponse, error)
+	ForgotPassword(ctx context.Context, req ForgotPasswordRequest) (*ForgotPasswordResponse, error)
 }
 
 type otpUsecase struct {
@@ -38,6 +40,67 @@ func NewOTPUsecase(userRepo domain.UserRepository, store domain.Store, mailer Em
 		mailer:   mailer,
 		cfg:      conf,
 	}
+}
+
+func (u *otpUsecase) ForgotPassword(ctx context.Context, req ForgotPasswordRequest) (*ForgotPasswordResponse, error) {
+	email := normalizeEmail(req.Email)
+	if email == "" || !strings.Contains(email, "@") {
+		return nil, apperrors.ErrInvalidInput
+	}
+
+	standardResponse := &ForgotPasswordResponse{
+		Email:             email,
+		ExpiresIn:         int(u.cfg.TTL.Seconds()),
+		ResendCooldownIn:  int(u.cfg.ResendCooldown.Seconds()),
+		MaxVerifyAttempts: u.cfg.MaxVerifyAttempts,
+	}
+
+	user, err := u.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrNotFound) || errors.Is(err, apperrors.ErrUserNotFound) {
+			// Anti-enumeration: return standard success response without sending email or setting OTP
+			return standardResponse, nil
+		}
+		return nil, fmt.Errorf("lookup user by email: %w", err)
+	}
+	if user == nil {
+		return standardResponse, nil
+	}
+
+	allowed, remainingTime, err := u.store.TrySetPasswordResetResendCooldown(ctx, email, u.cfg.ResendCooldown)
+	if err != nil {
+		return nil, fmt.Errorf("check resend cooldown: %w", err)
+	}
+	if !allowed {
+		details := map[string]interface{}{
+			"retry_after_seconds": int(remainingTime.Seconds()),
+		}
+		return nil, apperrors.NewAppErrorWithDetails(
+			429,
+			"OTP_COOLDOWN",
+			"Please wait before requesting another code.",
+			details,
+			nil,
+		)
+	}
+
+	code, err := generateOTP(u.cfg.Length)
+	if err != nil {
+		return nil, fmt.Errorf("generate otp: %w", err)
+	}
+
+	if err := u.store.SetPasswordResetOTP(ctx, email, hashOTP(code), u.cfg.TTL); err != nil {
+		return nil, fmt.Errorf("store password reset otp: %w", err)
+	}
+	if err := u.store.ResetPasswordResetOTPAttempts(ctx, email); err != nil {
+		return nil, fmt.Errorf("reset password reset otp attempts: %w", err)
+	}
+
+	if err := u.mailer.SendPasswordResetOTP(ctx, email, code); err != nil {
+		return nil, fmt.Errorf("send password reset otp email: %w", err)
+	}
+
+	return standardResponse, nil
 }
 
 func (u *otpUsecase) SendRegistrationOTP(ctx context.Context, req SendRegistrationOTPRequest) (*SendRegistrationOTPResponse, error) {

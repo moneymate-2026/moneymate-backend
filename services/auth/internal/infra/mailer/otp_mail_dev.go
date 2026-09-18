@@ -15,3 +15,8 @@ func (m *DevOtpMailer) SendOTP(ctx context.Context, toEmail, otp string) error {
 	log.Printf("[DEV OTP] To: %s | Code: %s", toEmail, otp)
 	return nil
 }
+
+func (m *DevOtpMailer) SendPasswordResetOTP(ctx context.Context, toEmail, otp string) error {
+	log.Printf("[DEV OTP - Password Reset] To: %s | Code: %s", toEmail, otp)
+	return nil
+}

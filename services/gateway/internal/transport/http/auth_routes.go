@@ -14,6 +14,9 @@ func registerAuthRoutes(api fiber.Router, authAddr string, authMiddleware fiber.
 	userAuth.Post("/logout", authMiddleware, proxy.AuthProxy(authAddr, "/auth/logout"))
 	userAuth.Post("/otp/send", proxy.AuthProxy(authAddr, "/auth/otp/send"))
 	userAuth.Post("/otp/verify", proxy.AuthProxy(authAddr, "/auth/otp/verify"))
+	userAuth.Post("/password/change", authMiddleware, proxy.AuthProxy(authAddr, "/auth/password/change"))
+	userAuth.Post("/password/forgot", proxy.AuthProxy(authAddr, "/auth/password/forgot"))
+	userAuth.Post("/password/reset", proxy.AuthProxy(authAddr, "/auth/password/reset"))
 	userAuth.Post("/refresh", proxy.AuthProxy(authAddr, "/auth/refresh"))
 
 	merchantAuth := api.Group("/merchant/auth")
